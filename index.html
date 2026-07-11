@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Purikura — Photo Booth</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>📸 Purikura Photo Booth</h1>
+  </header>
+
+  <!-- Global error banner -->
+  <div id="error-banner" class="error-banner" hidden role="alert">
+    <span id="error-text"></span>
+    <span class="error-actions">
+      <button id="error-retry" type="button" hidden>Retry</button>
+      <button id="error-dismiss" type="button">Dismiss</button>
+    </span>
+  </div>
+
+  <main class="app-main">
+    <!-- Step 1: Upload -->
+    <section id="screen-upload" class="screen" aria-label="Upload template">
+      <h2>Upload a template</h2>
+      <p class="muted">PNG with transparent holes, or JPG/JPEG with solid-color holes.</p>
+      <div id="dropzone" class="dropzone" tabindex="0" role="button">
+        <p>Drag &amp; drop a template here, or click to browse</p>
+        <small>Max 4000×4000px · PNG / JPG / JPEG</small>
+      </div>
+      <input id="file-input" type="file" accept="image/png,image/jpeg" hidden />
+    </section>
+
+    <!-- Step 3 (JPG): color pick -->
+    <section id="screen-jpgpick" class="screen" hidden aria-label="Pick placeholder color">
+      <h2>Pick the placeholder color</h2>
+      <p id="pick-hint" class="muted">Click a placeholder color in the template.</p>
+      <div class="pick-wrap">
+        <canvas id="pick-canvas" class="fit-canvas"></canvas>
+        <canvas id="loupe" class="loupe" width="140" height="140" hidden></canvas>
+      </div>
+      <div class="controls">
+        <span id="picked-swatch" class="swatch">no color</span>
+        <label class="slider-label">
+          Tolerance: <span id="tolerance-value">15</span>
+          <input id="tolerance-slider" type="range" min="0" max="120" value="15" />
+        </label>
+        <button id="rerun-btn" type="button" disabled>Detect</button>
+      </div>
+    </section>
+
+    <!-- Step 4: Confirm detection -->
+    <section id="screen-confirm" class="screen" hidden aria-label="Confirm placeholders">
+      <h2>Confirm detected placeholders</h2>
+      <canvas id="confirm-canvas" class="fit-canvas"></canvas>
+      <div id="detection-summary" class="summary"></div>
+      <div class="controls">
+        <button id="confirm-btn" type="button" class="primary">Confirm &amp; start</button>
+        <button id="recolor-btn" type="button" hidden>Pick another color</button>
+        <button id="cancel-btn" type="button">Upload another</button>
+      </div>
+    </section>
+
+    <!-- Steps 6-10: Session -->
+    <section id="screen-session" class="screen" hidden aria-label="Photo session">
+      <div class="status-row">
+        <span id="cam-status" class="pill">Camera: —</span>
+        <span id="mic-status" class="pill">Mic: —</span>
+        <span id="photo-progress" class="pill strong">Photo 1 of 1</span>
+        <select id="camera-select" class="cam-select" hidden aria-label="Choose camera"></select>
+      </div>
+      <div class="stage">
+        <video id="camera-video" autoplay playsinline muted></video>
+        <canvas id="session-overlay" class="overlay"></canvas>
+        <div id="countdown" class="countdown" hidden></div>
+      </div>
+      <p id="trigger-status" class="trigger-status">Prepare for your photo session.</p>
+      <button id="manual-capture-btn" type="button" class="primary" hidden>Capture</button>
+    </section>
+
+    <!-- Step 11: Processing -->
+    <section id="screen-processing" class="screen" hidden aria-label="Processing">
+      <div class="spinner"></div>
+      <h2>Processing your photo…</h2>
+      <p class="muted">Please wait…</p>
+    </section>
+
+    <!-- Step 12: Output -->
+    <section id="screen-output" class="screen" hidden aria-label="Result">
+      <h2 class="no-print">Your photo is ready!</h2>
+      <img id="output-image" class="output-image" alt="Completed composite" />
+      <div class="controls no-print">
+        <button id="download-btn" type="button" class="primary">Download PNG</button>
+        <button id="print-btn" type="button">Print</button>
+        <button id="again-btn" type="button">Same template</button>
+        <button id="new-template-btn" type="button">New template</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer no-print">
+    <small>&copy; <span id="footer-year">2026</span> Project Kilaw</small>
+  </footer>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

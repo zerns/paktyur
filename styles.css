@@ -1,0 +1,275 @@
+/* styles.css — Photo booth UI. Desktop-first, tablet-friendly, print-aware. */
+
+:root {
+  --bg: #14161c;
+  --panel: #1e222b;
+  --panel-2: #262b36;
+  --text: #eef1f6;
+  --muted: #9aa3b2;
+  --accent: #69f0ae;
+  --accent-2: #40c4ff;
+  --danger: #ff5252;
+  --radius: 12px;
+  --gap: 16px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid #2b3040;
+}
+.app-header h1 { margin: 0; font-size: 1.4rem; }
+
+.app-main {
+  flex: 1;
+  width: min(1000px, 92vw);
+  margin: 0 auto;
+  padding: 24px 0;
+}
+
+.app-footer {
+  text-align: center;
+  padding: 16px;
+  color: var(--muted);
+  border-top: 1px solid #2b3040;
+}
+
+h2 { margin-top: 0; }
+.muted { color: var(--muted); }
+
+/* --- Screens --------------------------------------------------------------- */
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  align-items: stretch;
+}
+.screen[hidden] { display: none; }
+
+/* --- Buttons --------------------------------------------------------------- */
+button {
+  font: inherit;
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: 1px solid #3a4150;
+  background: var(--panel-2);
+  color: var(--text);
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+button:hover:not(:disabled) { filter: brightness(1.15); }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+button.primary {
+  background: var(--accent);
+  color: #04120a;
+  border-color: transparent;
+  font-weight: 600;
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+/* --- Dropzone -------------------------------------------------------------- */
+.dropzone {
+  border: 2px dashed #3a4150;
+  border-radius: var(--radius);
+  padding: 56px 24px;
+  text-align: center;
+  background: var(--panel);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.dropzone:hover, .dropzone:focus, .dropzone.drag {
+  border-color: var(--accent);
+  background: var(--panel-2);
+  outline: none;
+}
+.dropzone p { margin: 0 0 6px; font-size: 1.1rem; }
+.dropzone small { color: var(--muted); }
+
+/* --- Canvases -------------------------------------------------------------- */
+.fit-canvas {
+  max-width: 100%;
+  height: auto;
+  background: #0b0d12;
+  border-radius: var(--radius);
+  border: 1px solid #2b3040;
+  cursor: crosshair;
+}
+
+.pick-wrap { position: relative; display: inline-block; }
+.loupe {
+  position: fixed;
+  right: 40px;
+  top: 120px;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  pointer-events: none;
+  image-rendering: pixelated;
+  background: #000;
+}
+
+.swatch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #3a4150;
+  font-size: 0.85rem;
+  color: #04120a;
+  background: #333;
+}
+.slider-label { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+.slider-label input { accent-color: var(--accent); }
+
+/* --- Summary --------------------------------------------------------------- */
+.summary {
+  background: var(--panel);
+  border: 1px solid #2b3040;
+  border-radius: var(--radius);
+  padding: 12px 16px;
+}
+.summary details { margin-top: 8px; }
+.summary ul { margin: 8px 0 0; padding-left: 20px; }
+
+/* --- Session --------------------------------------------------------------- */
+.status-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.pill {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  border: 1px solid #3a4150;
+  font-size: 0.9rem;
+}
+.pill.strong { font-weight: 700; }
+.pill[data-ok="yes"] { border-color: var(--accent); color: var(--accent); }
+.pill[data-ok="no"] { border-color: var(--danger); color: var(--danger); }
+.cam-select {
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid #3a4150;
+}
+
+.stage {
+  position: relative;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.stage video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1); /* mirror for a natural selfie preview */
+}
+.overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.trigger-status {
+  text-align: center;
+  font-size: 1.2rem;
+  min-height: 1.5em;
+}
+
+/* --- Countdown ------------------------------------------------------------- */
+.countdown {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(4rem, 18vw, 12rem);
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.25);
+}
+.countdown.pop { animation: pop 0.4s ease-out; }
+@keyframes pop {
+  0% { transform: scale(0.4); opacity: 0; }
+  50% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* --- Processing ------------------------------------------------------------ */
+#screen-processing { align-items: center; text-align: center; padding-top: 48px; }
+.spinner {
+  width: 56px;
+  height: 56px;
+  border: 6px solid #2b3040;
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* --- Output ---------------------------------------------------------------- */
+.output-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius);
+  border: 1px solid #2b3040;
+  align-self: center;
+}
+
+/* --- Error banner ---------------------------------------------------------- */
+.error-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: #3a1414;
+  border: 1px solid var(--danger);
+  color: #ffdede;
+  padding: 12px 20px;
+  margin: 12px auto;
+  width: min(1000px, 92vw);
+  border-radius: 8px;
+}
+.error-actions { display: flex; gap: 8px; }
+.error-banner button { padding: 6px 12px; }
+
+/* --- Responsive ------------------------------------------------------------ */
+@media (max-width: 640px) {
+  .loupe { right: 12px; top: 80px; width: 100px; height: 100px; }
+  .app-header h1 { font-size: 1.15rem; }
+}
+
+/* --- Print ----------------------------------------------------------------- */
+@media print {
+  .no-print, .app-header, .app-footer, .error-banner { display: none !important; }
+  body { background: #fff; }
+  .output-image { border: none; max-width: 100%; }
+  .app-main { width: 100%; padding: 0; }
+}
