@@ -160,27 +160,30 @@
 
     <!-- Step 12: Output -->
     <section id="screen-output" class="screen" hidden aria-label="Result">
-      <div class="result-grid">
-        <div class="result-image-wrap">
-          <img id="output-image" class="output-image" alt="Completed composite" />
+      <div class="result-container no-print">
+        <h2>Your strip is ready!</h2>
+        <p>Admire it, download it, then do it all again.</p>
+      </div>
+
+      <div class="result-image-wrap">
+        <img id="output-image" class="output-image" alt="Completed composite" />
+      </div>
+
+      <div class="result-actions no-print">
+        <div class="controls">
+          <button id="download-btn" type="button" class="primary">💾 Download</button>
+          <button id="print-btn" type="button" class="secondary-cta">🖨️ Print</button>
+          <button id="again-btn" type="button" class="secondary-cta">📸 Take Another</button>
+          <button id="new-template-btn" type="button" class="ghost">🎨 New Template</button>
         </div>
-        <div class="result-side">
-          <div class="result-emoji">🎉</div>
-          <h2 class="no-print">Your strip is ready!</h2>
-          <p class="muted no-print">Admire it, download it, then do it all again. 💫</p>
-          <div class="controls no-print">
-            <button id="download-btn" type="button" class="primary">💾 Download</button>
-            <button id="print-btn" type="button" class="secondary-cta">🖨️ Print</button>
-            <button id="again-btn" type="button" class="secondary-cta">📸 Take Another</button>
-            <button id="new-template-btn" type="button" class="ghost">🎨 New Template</button>
-          </div>
-          <div class="invite-card no-print">
-            <div class="invite-title">Invite your friends! 🥳</div>
-            <p>Enjoyed Paktyur? Share it so your friends can create their own photo strips too!</p>
-            <button id="copy-link-btn" type="button" class="lavender-cta">📋 Copy Website Link</button>
-          </div>
+
+        <div class="invite-card">
+          <div class="invite-title">Invite your friends! 🥳</div>
+          <p>Enjoyed Paktyur? Share it so your friends can create their own photo strips too!</p>
+          <button id="copy-link-btn" type="button" class="lavender-cta">📋 Copy Website Link</button>
         </div>
       </div>
+
       <canvas id="confetti" class="confetti no-print"></canvas>
     </section>
   </main>
