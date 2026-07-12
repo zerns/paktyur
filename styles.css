@@ -474,13 +474,18 @@ button.ghost {
 /* --- Confirm layout ------------------------------------------------------------------ */
 .confirm-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 40px;
+  grid-template-columns: auto minmax(0, 360px);
+  gap: 24px;
   align-items: start;
+  justify-content: center;
 }
 .confirm-image {
   display: flex;
   justify-content: center;
+}
+#confirm-canvas {
+  max-width: 220px;
+  width: 100%;
 }
 .confirm-side {
   display: flex;
@@ -745,7 +750,8 @@ button.ghost {
 }
 
 .output-image {
-  max-width: 100%;
+  max-width: 220px;
+  width: 100%;
   height: auto;
   border-radius: var(--radius);
 }

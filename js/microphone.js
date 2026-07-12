@@ -7,8 +7,8 @@
  * mode when the mic or speech recognition is unavailable.
  */
 
-import { VOICE_KEYWORDS, VOICE_TIMEOUT_MS, VOICE_MAX_RETRIES } from './config.js?v=d179be81';
-import { features } from './utils.js?v=d179be81';
+import { VOICE_KEYWORDS, VOICE_TIMEOUT_MS, VOICE_MAX_RETRIES } from './config.js?v=cfbed35d';
+import { features } from './utils.js?v=cfbed35d';
 
 /**
  * Request microphone permission. Returns true if granted.

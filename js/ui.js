@@ -15,9 +15,9 @@ import {
   DECO_EMOJI,
   DECO_REFRESH_MS,
   DECO_COUNT,
-} from './config.js?v=d179be81';
-import { $, clamp } from './utils.js?v=d179be81';
-import { TEMPLATES, TEMPLATE_ORDER, paintCardPreview } from './templates.js?v=d179be81';
+} from './config.js?v=cfbed35d';
+import { $, clamp } from './utils.js?v=cfbed35d';
+import { TEMPLATES, TEMPLATE_ORDER, paintCardPreview } from './templates.js?v=cfbed35d';
 
 export const SCREENS = ['upload', 'jpgpick', 'confirm', 'session', 'processing', 'output'];
 const ALL_SCREENS = ['welcome', ...SCREENS];
