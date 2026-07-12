@@ -1,4 +1,4 @@
-# Purikura — Client-Side Photo Booth
+# Paktyur — Client-Side Photo Booth
 
 A production-quality, **100% client-side** photo booth web app. Upload a
 template image, the app detects photo placeholder regions, runs a hands-free
@@ -17,7 +17,7 @@ ES modules and `getUserMedia` require a real HTTP(S) origin — opening
 `index.html` via `file://` will **not** work. Serve it locally:
 
 ```bash
-cd purikura
+cd Paktyur
 python3 -m http.server 8000
 # open http://localhost:8000 in Chrome
 ```
