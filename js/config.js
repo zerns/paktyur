@@ -85,5 +85,10 @@ export const DECO_EMOJI = [
   '🌈', '✨', '💖', '⭐', '🎈', '🌟', '🎀', '🍭',
   '🥳', '🫶', '😎', '🌸', '🍬', '💫', '🎉', '🧁',
 ];
-export const DECO_REFRESH_MS = 5200;
-export const DECO_COUNT = 4;
+export const DECO_COUNT_MIN = 4;
+export const DECO_COUNT_MAX = 7;
+export const DECO_VISIBLE_MS_MIN = 3000;
+export const DECO_VISIBLE_MS_MAX = 8000;
+export const DECO_GAP_MS_MIN = 800;
+export const DECO_GAP_MS_MAX = 2000;
+export const DECO_FADE_MS = 600;

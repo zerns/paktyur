@@ -37,6 +37,7 @@
 @keyframes pkToast { 0% { opacity: 0; transform: translate(-50%, 14px); } 12% { opacity: 1; transform: translate(-50%, 0); } 88% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, -8px); } }
 @keyframes pkPulseRing { 0% { box-shadow: 0 0 0 0 rgba(255, 107, 107, .5); } 70% { box-shadow: 0 0 0 18px rgba(255, 107, 107, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0); } }
 @keyframes pkResultIn { 0% { transform: rotate(-6deg) scale(.7); opacity: 0; } 60% { transform: rotate(2deg) scale(1.03); } 100% { transform: rotate(-1deg) scale(1); opacity: 1; } }
+@keyframes pkDecoFade { to { opacity: 0; transform: scale(.7); } }
 
 html, body {
   margin: 0;
@@ -81,6 +82,9 @@ h2 { margin: 0 0 6px; font-size: clamp(1.5rem, 3.2vw, 2.1rem); }
   position: absolute;
   will-change: transform;
   animation: pkPop .6s ease, pkFloat 8s ease-in-out infinite;
+}
+#deco-layer span.deco-fade {
+  animation: pkDecoFade 0.6s ease forwards !important;
 }
 
 /* --- Header / brand / stepper ----------------------------------------------- */

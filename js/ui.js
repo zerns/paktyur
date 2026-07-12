@@ -13,8 +13,13 @@ import {
   PROCESSING_MESSAGES,
   PROCESSING_TICK_MS,
   DECO_EMOJI,
-  DECO_REFRESH_MS,
-  DECO_COUNT,
+  DECO_COUNT_MIN,
+  DECO_COUNT_MAX,
+  DECO_VISIBLE_MS_MIN,
+  DECO_VISIBLE_MS_MAX,
+  DECO_GAP_MS_MIN,
+  DECO_GAP_MS_MAX,
+  DECO_FADE_MS,
 } from './config.js?v=cfbed35d';
 import { $, clamp } from './utils.js?v=cfbed35d';
 import { TEMPLATES, TEMPLATE_ORDER, paintCardPreview } from './templates.js?v=cfbed35d';
@@ -185,37 +190,87 @@ export class UI {
 
   // --- Floating decoration ------------------------------------------------------
   startDeco() {
-    this._renderDeco();
-    this._decoTimer = setInterval(() => this._renderDeco(), DECO_REFRESH_MS);
+    const layer = this.el.decoLayer;
+    if (!layer) return () => {};
+    this._decoLayer = layer;
+    this._decoTimeouts = [];
+    this._decoActiveEmoji = new Set();
+    this._decoQuadrants = [
+      { left: [3, 15], top: [8, 45], name: 'tl' },
+      { left: [80, 93], top: [8, 45], name: 'tr' },
+      { left: [3, 15], top: [45, 82], name: 'bl' },
+      { left: [80, 93], top: [45, 82], name: 'br' },
+    ];
+    for (let q = 0; q < 4; q++) {
+      this._spawnDecoSlot(q, false);
+    }
+    this._spawnDecoFloaters();
     return () => this.stopDeco();
   }
 
   stopDeco() {
-    if (this._decoTimer) clearInterval(this._decoTimer);
-    this._decoTimer = null;
+    this._decoTimeouts.forEach(t => clearTimeout(t));
+    this._decoTimeouts = [];
+    this._decoActiveEmoji.clear();
+    if (this._decoLayer) this._decoLayer.innerHTML = '';
   }
 
-  _renderDeco() {
-    const layer = this.el.decoLayer;
-    if (!layer) return;
-    layer.innerHTML = '';
-    const pool = DECO_EMOJI.slice();
+  _spawnDecoSlot(quadrantIndex, isFloater) {
+    if (!this._decoLayer) return;
+    const quad = isFloater
+      ? this._decoQuadrants[Math.floor(Math.random() * 4)]
+      : this._decoQuadrants[quadrantIndex];
     const rnd = (a, b) => a + Math.random() * (b - a);
-    for (let i = 0; i < DECO_COUNT; i++) {
-      const emoji = pool.splice((Math.random() * pool.length) | 0, 1)[0];
-      const left = Math.random() < 0.5 ? rnd(3, 15) : rnd(80, 93);
-      const top = rnd(8, 82);
-      const size = rnd(28, 42) | 0;
-      const dur = rnd(6, 11).toFixed(1);
-      const delay = rnd(0, 1.4).toFixed(1);
-      const rot = (rnd(-14, 14)) | 0;
-      const span = document.createElement('span');
-      span.textContent = emoji;
-      span.style.cssText =
-        `--r:${rot}deg;left:${left.toFixed(1)}%;top:${top.toFixed(1)}%;` +
-        `font-size:${size}px;animation-duration:.6s,${dur}s;animation-delay:0s,${delay}s;`;
-      layer.appendChild(span);
+    const emojiPool = DECO_EMOJI.filter(e => !this._decoActiveEmoji.has(e));
+    if (emojiPool.length === 0) return;
+    const emoji = emojiPool[Math.floor(Math.random() * emojiPool.length)];
+    this._decoActiveEmoji.add(emoji);
+    const left = rnd(quad.left[0], quad.left[1]);
+    const top = rnd(quad.top[0], quad.top[1]);
+    const size = rnd(28, 42) | 0;
+    const dur = rnd(6, 11).toFixed(1);
+    const delay = rnd(0, 1.4).toFixed(1);
+    const rot = (rnd(-14, 14)) | 0;
+    const span = document.createElement('span');
+    span.textContent = emoji;
+    span.dataset.decoEmoji = emoji;
+    span.style.cssText =
+      `--r:${rot}deg;left:${left.toFixed(1)}%;top:${top.toFixed(1)}%;` +
+      `font-size:${size}px;animation-duration:.6s,${dur}s;animation-delay:0s,${delay}s;`;
+    this._decoLayer.appendChild(span);
+    const visibleMs = rnd(DECO_VISIBLE_MS_MIN, DECO_VISIBLE_MS_MAX) | 0;
+    const t = setTimeout(() => {
+      this._despawnDecoSlot(span, quadrantIndex, isFloater);
+    }, visibleMs);
+    this._decoTimeouts.push(t);
+  }
+
+  _despawnDecoSlot(span, quadrantIndex, isFloater) {
+    if (!this._decoLayer || !span.parentNode) return;
+    const emoji = span.dataset.decoEmoji;
+    span.classList.add('deco-fade');
+    const t = setTimeout(() => {
+      if (span.parentNode) span.remove();
+      if (emoji) this._decoActiveEmoji.delete(emoji);
+      const gapMs = (Math.random() * (DECO_GAP_MS_MAX - DECO_GAP_MS_MIN) + DECO_GAP_MS_MIN) | 0;
+      const t2 = setTimeout(() => {
+        this._spawnDecoSlot(quadrantIndex, isFloater);
+      }, gapMs);
+      this._decoTimeouts.push(t2);
+    }, DECO_FADE_MS);
+    this._decoTimeouts.push(t);
+  }
+
+  _spawnDecoFloaters() {
+    const floaterCount = Math.floor(Math.random() * (DECO_COUNT_MAX - DECO_COUNT_MIN + 1) + DECO_COUNT_MIN) - 4;
+    for (let i = 0; i < floaterCount; i++) {
+      this._spawnDecoSlot(null, true);
     }
+    const nextWaveMs = (Math.random() * (DECO_VISIBLE_MS_MAX - DECO_VISIBLE_MS_MIN) + DECO_VISIBLE_MS_MIN) | 0;
+    const t = setTimeout(() => {
+      this._spawnDecoFloaters();
+    }, nextWaveMs);
+    this._decoTimeouts.push(t);
   }
 
   // --- Toast ----------------------------------------------------------------------
