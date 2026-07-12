@@ -143,6 +143,9 @@ h2 { margin: 0 0 6px; font-size: clamp(1.5rem, 3.2vw, 2.1rem); }
   box-shadow: 0 8px 24px -14px rgba(90, 60, 80, .4);
   flex-wrap: wrap;
 }
+.stepper[hidden] {
+  display: none;
+}
 .step-dot {
   display: inline-flex;
   align-items: center;
@@ -357,6 +360,10 @@ button.ghost {
 .confirm-side .controls {
   justify-content: flex-start;
   flex-direction: column;
+  align-items: flex-start;
+}
+.confirm-side .controls button {
+  width: 100%;
 }
 
 /* --- Dropzone ------------------------------------------------------------------ */

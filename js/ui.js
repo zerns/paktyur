@@ -23,7 +23,6 @@ const ALL_SCREENS = ['welcome', ...SCREENS];
 
 const STEP_DEFS = [
   { key: 'upload', label: 'Upload' },
-  { key: 'jpgpick', label: 'Color' },
   { key: 'confirm', label: 'Confirm' },
   { key: 'session', label: 'Capture' },
   { key: 'processing', label: 'Processing' },
