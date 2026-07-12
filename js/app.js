@@ -87,6 +87,9 @@ class App {
 
   _bindGlobal() {
     const { el } = this.ui;
+    // Brand logo — back to welcome.
+    this.bag.add(on($('#brand-btn'), 'click', () => this._enter(State.WELCOME, { reset: true })));
+
     // Welcome.
     this.bag.add(on(el.heroStartBtn, 'click', () => this._enter(State.UPLOAD)));
 
