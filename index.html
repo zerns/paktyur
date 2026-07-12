@@ -90,17 +90,23 @@
         <h2>Here's your strip 👀</h2>
         <p class="muted">The highlighted areas will be filled with the photos you take.</p>
       </div>
-      <canvas id="confirm-canvas" class="fit-canvas card"></canvas>
-      <div class="tip-row">
-        <div class="tip">🧍‍♀️🧍<span>Make sure everyone fits in the frame.</span></div>
-        <div class="tip">💡<span>Good lighting gives the best results.</span></div>
-        <div class="tip">🥳<span>Most important — have fun!</span></div>
-      </div>
-      <div id="detection-summary" class="summary"></div>
-      <div class="controls">
-        <button id="confirm-btn" type="button" class="primary">Start Taking Photos 📸</button>
-        <button id="recolor-btn" type="button" hidden>Pick another color</button>
-        <button id="cancel-btn" type="button" class="ghost">← Change</button>
+      <div class="confirm-grid">
+        <div class="confirm-image">
+          <canvas id="confirm-canvas" class="fit-canvas card"></canvas>
+        </div>
+        <div class="confirm-side">
+          <div class="tip-row">
+            <div class="tip">🧍‍♀️🧍<span>Make sure everyone fits in the frame.</span></div>
+            <div class="tip">💡<span>Good lighting gives the best results.</span></div>
+            <div class="tip">🥳<span>Most important — have fun!</span></div>
+          </div>
+          <div id="detection-summary" class="summary" hidden></div>
+          <div class="controls">
+            <button id="confirm-btn" type="button" class="primary">Start Taking Photos 📸</button>
+            <button id="recolor-btn" type="button" hidden>Pick another color</button>
+            <button id="cancel-btn" type="button" class="ghost">← Change</button>
+          </div>
+        </div>
       </div>
     </section>
 
