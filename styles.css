@@ -229,7 +229,7 @@ h2 { margin: 0 0 6px; font-size: clamp(1.5rem, 3.2vw, 2.1rem); }
   font-family: var(--font-display);
   font-weight: 700;
   font-size: clamp(56px, 9vw, 104px);
-  line-height: .95;
+  line-height: 1.25;
   margin: 18px 0 6px;
   letter-spacing: -1px;
   display: inline-block;
