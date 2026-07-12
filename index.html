@@ -3,29 +3,61 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Purikura — Photo Booth</title>
+  <title>Paktyur! — Photo Booth</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <!-- Floating decorative emoji, purely cosmetic -->
+  <div id="deco-layer" aria-hidden="true"></div>
+
   <header class="app-header">
-    <h1>📸 Purikura Photo Booth</h1>
+    <span class="brand">
+      <span class="brand-mark">📸</span>
+      <span class="brand-word">Paktyur<span class="brand-bang">!</span></span>
+    </span>
+    <nav id="stepper" class="stepper" aria-label="Progress"></nav>
   </header>
 
-  <!-- Global error banner -->
-  <div id="error-banner" class="error-banner" hidden role="alert">
-    <span id="error-text"></span>
-    <span class="error-actions">
-      <button id="error-retry" type="button" hidden>Retry</button>
-      <button id="error-dismiss" type="button">Dismiss</button>
-    </span>
-  </div>
-
   <main class="app-main">
+    <!-- Step 0: Welcome -->
+    <section id="screen-welcome" class="screen hero-screen" aria-label="Welcome">
+      <div class="hero">
+        <div class="hero-copy">
+          <span class="hero-badge">🎉 The friendliest photo booth on the web</span>
+          <h1 class="hero-title">Paktyur<span class="brand-bang">!</span></h1>
+          <p class="hero-sub">Smile, strike a pose &amp; make your own photo strip in minutes.</p>
+          <p class="hero-desc">Choose a template, capture your moments hands-free, and download a personalized strip you'll actually want to share.</p>
+          <button id="hero-start-btn" type="button" class="primary hero-cta">📸&nbsp; Take a Picture Now</button>
+          <div class="hero-facts">
+            <span>✌️ Hands-free capture</span><span>🎨 Fun templates</span><span>💾 Instant download</span>
+          </div>
+        </div>
+        <div class="hero-visual">
+          <div class="hero-ring" aria-hidden="true"></div>
+          <div class="hero-strip">
+            <div class="hero-strip-slot" style="background:linear-gradient(135deg,#FF9A9E,#FECFEF)">😄</div>
+            <div class="hero-strip-slot" style="background:linear-gradient(135deg,#A0E9FF,#6FE7DD)">✌️</div>
+            <div class="hero-strip-slot" style="background:linear-gradient(135deg,#FBC2EB,#A6C1EE)">🥳</div>
+            <div class="hero-strip-slot" style="background:linear-gradient(135deg,#FFE29F,#FFA99F)">😎</div>
+            <div class="hero-strip-caption">Paktyur! ♥</div>
+          </div>
+          <div class="hero-decor hero-decor--star" aria-hidden="true">🌟</div>
+          <div class="hero-decor hero-decor--balloon" aria-hidden="true">🎈</div>
+        </div>
+      </div>
+    </section>
+
     <!-- Step 1: Upload -->
-    <section id="screen-upload" class="screen" aria-label="Upload template">
-      <h2>Upload a template</h2>
-      <p class="muted">PNG with transparent holes, or JPG/JPEG with solid-color holes.</p>
+    <section id="screen-upload" class="screen" hidden aria-label="Upload template">
+      <div class="screen-head">
+        <h2>Pick your vibe 🎨</h2>
+        <p class="muted">Upload a template with PNG transparent holes, or JPG/JPEG solid-color holes.</p>
+      </div>
       <div id="dropzone" class="dropzone" tabindex="0" role="button">
+        <div class="dropzone-icon">📤</div>
         <p>Drag &amp; drop a template here, or click to browse</p>
         <small>Max 4000×4000px · PNG / JPG / JPEG</small>
       </div>
@@ -34,9 +66,11 @@
 
     <!-- Step 3 (JPG): color pick -->
     <section id="screen-jpgpick" class="screen" hidden aria-label="Pick placeholder color">
-      <h2>Pick the placeholder color</h2>
-      <p id="pick-hint" class="muted">Click a placeholder color in the template.</p>
-      <div class="pick-wrap">
+      <div class="screen-head">
+        <h2>Pick the placeholder color 🎯</h2>
+        <p id="pick-hint" class="muted">Click a placeholder color in the template.</p>
+      </div>
+      <div class="pick-wrap card">
         <canvas id="pick-canvas" class="fit-canvas"></canvas>
         <canvas id="loupe" class="loupe" width="140" height="140" hidden></canvas>
       </div>
@@ -46,58 +80,112 @@
           Tolerance: <span id="tolerance-value">15</span>
           <input id="tolerance-slider" type="range" min="0" max="120" value="15" />
         </label>
-        <button id="rerun-btn" type="button" disabled>Detect</button>
+        <button id="rerun-btn" type="button" class="primary" disabled>Detect</button>
       </div>
     </section>
 
     <!-- Step 4: Confirm detection -->
     <section id="screen-confirm" class="screen" hidden aria-label="Confirm placeholders">
-      <h2>Confirm detected placeholders</h2>
-      <canvas id="confirm-canvas" class="fit-canvas"></canvas>
+      <div class="screen-head">
+        <h2>Here's your strip 👀</h2>
+        <p class="muted">The highlighted areas will be filled with the photos you take.</p>
+      </div>
+      <canvas id="confirm-canvas" class="fit-canvas card"></canvas>
+      <div class="tip-row">
+        <div class="tip">🧍‍♀️🧍<span>Make sure everyone fits in the frame.</span></div>
+        <div class="tip">💡<span>Good lighting gives the best results.</span></div>
+        <div class="tip">🥳<span>Most important — have fun!</span></div>
+      </div>
       <div id="detection-summary" class="summary"></div>
       <div class="controls">
-        <button id="confirm-btn" type="button" class="primary">Confirm &amp; start</button>
+        <button id="confirm-btn" type="button" class="primary">Start Taking Photos 📸</button>
         <button id="recolor-btn" type="button" hidden>Pick another color</button>
-        <button id="cancel-btn" type="button">Upload another</button>
+        <button id="cancel-btn" type="button" class="ghost">← Change</button>
       </div>
     </section>
 
     <!-- Steps 6-10: Session -->
     <section id="screen-session" class="screen" hidden aria-label="Photo session">
-      <div class="status-row">
-        <span id="cam-status" class="pill">Camera: —</span>
-        <span id="mic-status" class="pill">Mic: —</span>
-        <span id="photo-progress" class="pill strong">Photo 1 of 1</span>
-        <select id="camera-select" class="cam-select" hidden aria-label="Choose camera"></select>
+      <div class="capture-grid">
+        <div class="stage-col">
+          <div class="stage">
+            <video id="camera-video" autoplay playsinline muted></video>
+            <canvas id="session-overlay" class="overlay"></canvas>
+            <div class="stage-guide" aria-hidden="true"></div>
+            <div id="cam-status" class="stage-pill stage-pill--left">
+              <span id="cam-dot" class="stage-dot"></span><span id="cam-status-text">Checking…</span>
+            </div>
+            <div id="photo-progress" class="stage-pill stage-pill--right">Photo 1 of 1</div>
+            <div id="countdown" class="countdown" hidden></div>
+            <div id="camera-flash" class="camera-flash" hidden></div>
+          </div>
+
+          <div class="trigger-panel">
+            <div id="trigger-row" class="trigger-row">
+              <span class="trigger-pill" data-trigger="voice">🎙️ Voice</span>
+              <span class="trigger-pill" data-trigger="gesture">✌️ Gesture</span>
+              <span class="trigger-pill" data-trigger="manual">👆 Manual</span>
+            </div>
+            <p id="mic-status" class="mic-note"></p>
+            <div class="trigger-card card">
+              <div id="trigger-icon" class="trigger-icon">🎙️</div>
+              <div id="trigger-status" class="trigger-status">Prepare for your photo session.</div>
+              <div id="trigger-hint" class="trigger-hint" hidden></div>
+              <button id="manual-capture-btn" type="button" class="primary" hidden>📸 Capture</button>
+            </div>
+            <select id="camera-select" class="cam-select" hidden aria-label="Choose camera"></select>
+          </div>
+        </div>
+
+        <aside class="strip-col card">
+          <div class="strip-col-title">Your strip</div>
+          <canvas id="strip-preview" class="strip-preview"></canvas>
+          <div id="filled-label" class="filled-label">0 of 1 captured</div>
+        </aside>
       </div>
-      <div class="stage">
-        <video id="camera-video" autoplay playsinline muted></video>
-        <canvas id="session-overlay" class="overlay"></canvas>
-        <div id="countdown" class="countdown" hidden></div>
-      </div>
-      <p id="trigger-status" class="trigger-status">Prepare for your photo session.</p>
-      <button id="manual-capture-btn" type="button" class="primary" hidden>Capture</button>
     </section>
 
     <!-- Step 11: Processing -->
     <section id="screen-processing" class="screen" hidden aria-label="Processing">
-      <div class="spinner"></div>
-      <h2>Processing your photo…</h2>
-      <p class="muted">Please wait…</p>
+      <div class="proc-spinner">
+        <div class="proc-ring"></div>
+        <div class="proc-emoji">🪄</div>
+      </div>
+      <h2>🎉 Great job!</h2>
+      <p id="processing-caption" class="proc-caption">Developing your masterpiece…</p>
+      <div class="proc-bar">
+        <div id="proc-bar-fill" class="proc-bar-fill"></div>
+      </div>
     </section>
 
     <!-- Step 12: Output -->
     <section id="screen-output" class="screen" hidden aria-label="Result">
-      <h2 class="no-print">Your photo is ready!</h2>
-      <img id="output-image" class="output-image" alt="Completed composite" />
-      <div class="controls no-print">
-        <button id="download-btn" type="button" class="primary">Download PNG</button>
-        <button id="print-btn" type="button">Print</button>
-        <button id="again-btn" type="button">Same template</button>
-        <button id="new-template-btn" type="button">New template</button>
+      <div class="result-grid">
+        <div class="result-image-wrap">
+          <img id="output-image" class="output-image" alt="Completed composite" />
+        </div>
+        <div class="result-side">
+          <div class="result-emoji">🎉</div>
+          <h2 class="no-print">Your strip is ready!</h2>
+          <p class="muted no-print">Admire it, download it, then do it all again. 💫</p>
+          <div class="controls no-print">
+            <button id="download-btn" type="button" class="primary">💾 Download</button>
+            <button id="print-btn" type="button" class="secondary-cta">🖨️ Print</button>
+            <button id="again-btn" type="button" class="secondary-cta">📸 Take Another</button>
+            <button id="new-template-btn" type="button" class="ghost">🎨 New Template</button>
+          </div>
+          <div class="invite-card no-print">
+            <div class="invite-title">Invite your friends! 🥳</div>
+            <p>Enjoyed Paktyur? Share it so your friends can create their own photo strips too!</p>
+            <button id="copy-link-btn" type="button" class="lavender-cta">📋 Copy Website Link</button>
+          </div>
+        </div>
       </div>
+      <canvas id="confetti" class="confetti no-print"></canvas>
     </section>
   </main>
+
+  <div id="toast" class="toast" hidden></div>
 
   <footer class="app-footer no-print">
     <small>&copy; <span id="footer-year">2026</span> Project Kilaw</small>

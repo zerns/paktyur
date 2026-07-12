@@ -40,6 +40,7 @@ import { GestureTrigger } from './gesture.js';
 import { UI } from './ui.js';
 
 const State = {
+  WELCOME: 'welcome',
   UPLOAD: 'upload',
   JPGPICK: 'jpgpick',
   CONFIRM: 'confirm',
@@ -54,7 +55,8 @@ class App {
     this.bag = createDisposerBag(); // global listeners
     this.reset(true);
     this._bindGlobal();
-    this._enter(State.UPLOAD);
+    this.bag.add(this.ui.startDeco());
+    this._enter(State.WELCOME);
   }
 
   /** Clear per-template state and release resources. */
@@ -85,6 +87,9 @@ class App {
 
   _bindGlobal() {
     const { el } = this.ui;
+    // Welcome.
+    this.bag.add(on(el.heroStartBtn, 'click', () => this._enter(State.UPLOAD)));
+
     // Upload.
     this.bag.add(on(el.fileInput, 'change', (e) => this._onFile(e.target.files?.[0])));
     this.bag.add(on(el.dropzone, 'click', () => el.fileInput.click()));
@@ -120,14 +125,7 @@ class App {
     this.bag.add(on(el.printBtn, 'click', () => window.print()));
     this.bag.add(on(el.againBtn, 'click', () => this._retakeSameTemplate()));
     this.bag.add(on(el.newTemplateBtn, 'click', () => this._enter(State.UPLOAD, { reset: true })));
-
-    // Error banner.
-    this.bag.add(on(el.errorDismiss, 'click', () => this.ui.hideError()));
-    this.bag.add(on(el.errorRetry, 'click', () => {
-      const h = this.ui._retryHandler;
-      this.ui.hideError();
-      if (h) h();
-    }));
+    this.bag.add(on(el.copyLinkBtn, 'click', () => this._copyLink()));
 
     // Offline/online: gesture depends on the network.
     this.bag.add(on(window, 'offline', () => this._onConnectivityChange()));
@@ -139,13 +137,15 @@ class App {
     if (opts.reset) this.reset(false);
     this.state = state;
     this.ui.show(state);
+    this.ui.renderStepper(state);
     if (state !== State.SESSION) this._teardownSession();
+    if (state !== State.OUTPUT) this.ui.stopConfetti();
+    if (state !== State.PROCESSING) this.ui.stopProcessingCaptions();
   }
 
   // === Step 1-2: Upload + validate =========================================
   async _onFile(file) {
     if (!file) return;
-    this.ui.hideError();
     try {
       const mode = await validateTemplateFile(file); // 'png' | 'jpg'
       const bitmap = await decode(file);
@@ -153,6 +153,8 @@ class App {
       closeBitmap(this.template);
       this.template = bitmap;
       this.mode = mode;
+
+      this.ui.showToast('Template uploaded! ✨');
 
       if (mode === 'png') {
         await this._runPngDetection();
@@ -163,7 +165,7 @@ class App {
         this._setupJpgPick();
       }
     } catch (err) {
-      this.ui.showError(err.message, () => this.ui.el.fileInput.click());
+      this.ui.showToast(err.message);
     }
   }
 
@@ -174,7 +176,7 @@ class App {
       this.detection = await detectPlaceholders(imageData, 'png');
       this._showConfirm();
     } catch (err) {
-      this.ui.showError(`Placeholder detection failed: ${err.message}`);
+      this.ui.showToast(`Detection failed: ${err.message}`);
     }
   }
 
@@ -221,7 +223,7 @@ class App {
       });
       this._showConfirm();
     } catch (err) {
-      this.ui.showError(`Placeholder detection failed: ${err.message}`);
+      this.ui.showToast(`Detection failed: ${err.message}`);
     }
   }
 
@@ -236,11 +238,7 @@ class App {
   _confirmDetection() {
     const n = this.detection.valid.length;
     if (n < MIN_PHOTOS || n > MAX_PHOTOS) {
-      const reasons = this.detection.rejected.map((r) => `#${r.id + 1}: ${r.reason}`).join('; ');
-      this.ui.showError(
-        `Need between ${MIN_PHOTOS} and ${MAX_PHOTOS} placeholders, found ${n} valid ` +
-        `(${this.detection.rejected.length} rejected${reasons ? ': ' + reasons : ''}).`
-      );
+      this.ui.showToast(`Need ${MIN_PHOTOS}–${MAX_PHOTOS} placeholders, found ${n}`);
       return;
     }
     this._startSession();
@@ -265,7 +263,7 @@ class App {
       this.ui.populateCameras(cams, this.camera.deviceId);
     } catch (err) {
       this.ui.setCameraStatus('unavailable', false);
-      this.ui.showError(err.message, () => this._startSession());
+      this.ui.showToast(err.message);
       return;
     }
 
@@ -285,6 +283,8 @@ class App {
   async _chooseTriggerMode(micOk) {
     this._teardownTriggers();
 
+    this.ui.setTriggerHint('');
+
     if (micOk && VoiceTrigger.supported) {
       this.ui.setMicStatus('ready', true);
       this.voice = new VoiceTrigger(() => this._triggerCapture(), (s) => this.ui.setTriggerStatus(s));
@@ -292,13 +292,22 @@ class App {
         this.voice.start();
         this.triggerMode = 'voice';
         this.ui.showManualButton(false);
+        this.ui.setTriggerMode('voice');
         this.ui.setTriggerStatus('Say “Cheese”');
         return;
       } catch {
         this.voice = null;
       }
     }
-    this.ui.setMicStatus(micOk ? 'no speech engine' : 'unavailable', false);
+
+    // Explain why voice is off so the fallback isn't confusing.
+    if (micOk && !VoiceTrigger.supported) {
+      this.ui.setMicStatus('no speech engine', false);
+      this.ui.setTriggerHint('Voice trigger needs Chrome or Edge. Using gesture / manual capture instead.');
+    } else if (!micOk) {
+      this.ui.setMicStatus('unavailable', false);
+      this.ui.setTriggerHint('Microphone unavailable — using gesture / manual capture.');
+    }
 
     // Gesture fallback — needs the network.
     if (isOnline()) {
@@ -312,6 +321,7 @@ class App {
         await this.gesture.start();
         this.triggerMode = 'gesture';
         this.ui.showManualButton(false);
+        this.ui.setTriggerMode('gesture');
         this.ui.setTriggerStatus('Show a ✌️ hand sign to begin.');
         return;
       } catch (err) {
@@ -326,6 +336,7 @@ class App {
     // Last resort: manual capture button.
     this.triggerMode = 'manual';
     this.ui.showManualButton(true);
+    this.ui.setTriggerMode('manual');
     this.ui.setTriggerStatus('Tap “Capture” to take each photo.');
   }
 
@@ -337,6 +348,7 @@ class App {
       this._teardownTriggers();
       this.triggerMode = 'manual';
       this.ui.showManualButton(true);
+      this.ui.setTriggerMode('manual');
       this.ui.setTriggerStatus('Connection lost — gesture disabled. Tap “Capture”.');
     } else if (this.triggerMode === 'manual' && isOnline() && !this.voice) {
       // Network returned and we have no voice → try to (re)enable gesture.
@@ -358,6 +370,13 @@ class App {
       this.templateSize.width,
       this.templateSize.height
     );
+    this.ui.renderStripPreview(
+      this.template,
+      this.templateSize.width,
+      this.templateSize.height,
+      this.detection.valid,
+      this.activeIndex
+    );
   }
 
   // === Step 7-9: Trigger -> countdown -> capture ===========================
@@ -374,7 +393,7 @@ class App {
       const frame = await this.camera.capture();
       this.photos[this.activeIndex] = frame;
     } catch (err) {
-      this.ui.showError(`Capture failed: ${err.message}`, () => { this.capturing = false; this._armCurrent(); });
+      this.ui.showToast(`Capture failed: ${err.message}`);
       this.capturing = false;
       return;
     }
@@ -400,6 +419,7 @@ class App {
   async _finish() {
     this._teardownSession();
     this._enter(State.PROCESSING);
+    this.ui.startProcessingCaptions();
     // Yield so the processing screen paints before heavy compositing.
     await new Promise((r) => setTimeout(r, 30));
     try {
@@ -414,10 +434,23 @@ class App {
       if (this.outputUrl) revokeObjectUrl(this.outputUrl);
       this.outputUrl = trackObjectUrl(URL.createObjectURL(blob));
       this.ui.setOutputImage(this.outputUrl);
+      this.ui.stopProcessingCaptions();
       this._enter(State.OUTPUT);
+      this.ui.burstConfetti();
     } catch (err) {
-      this.ui.showError(`Rendering failed: ${err.message}`, () => this._finish());
+      this.ui.stopProcessingCaptions();
+      this.ui.showToast(`Rendering failed: ${err.message}`);
     }
+  }
+
+  _copyLink() {
+    const url = window.location.href;
+    try {
+      navigator.clipboard?.writeText(url);
+    } catch {
+      /* clipboard optional */
+    }
+    this.ui.showToast('Link copied! Share the fun! 🎉');
   }
 
   _download() {
@@ -447,7 +480,7 @@ class App {
       await this.camera.switchTo(deviceId);
       this._refreshOverlay();
     } catch (err) {
-      this.ui.showError(err.message);
+      this.ui.showToast(err.message);
     }
   }
 

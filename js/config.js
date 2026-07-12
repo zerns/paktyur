@@ -67,6 +67,22 @@ export const CAMERA_CONSTRAINTS = {
 
 // --- Overlay colors (cycled per placeholder) --------------------------------
 export const OVERLAY_COLORS = [
-  '#ff5252', '#40c4ff', '#69f0ae', '#ffd740',
-  '#e040fb', '#ff6e40', '#18ffff', '#b2ff59',
+  '#FF6B6B', '#6FE7DD', '#BFA2FF', '#FFD93D',
+  '#FF9A5A', '#7C5CE0', '#4FC3B5', '#FF5A7A',
 ];
+
+// --- Copy: rotating processing captions & decorative emoji pool ------------
+export const PROCESSING_MESSAGES = [
+  'Developing your masterpiece…',
+  'Adding the magic…',
+  'Making everyone look amazing…',
+  'Almost ready…',
+];
+export const PROCESSING_TICK_MS = 900;
+
+export const DECO_EMOJI = [
+  '🌈', '✨', '💖', '⭐', '🎈', '🌟', '🎀', '🍭',
+  '🥳', '🫶', '😎', '🌸', '🍬', '💫', '🎉', '🧁',
+];
+export const DECO_REFRESH_MS = 5200;
+export const DECO_COUNT = 4;
