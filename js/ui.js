@@ -15,15 +15,16 @@ import {
   DECO_EMOJI,
   DECO_REFRESH_MS,
   DECO_COUNT,
-} from './config.js';
-import { $, clamp } from './utils.js';
+} from './config.js?v=d179be81';
+import { $, clamp } from './utils.js?v=d179be81';
+import { TEMPLATES, TEMPLATE_ORDER, paintCardPreview } from './templates.js?v=d179be81';
 
 export const SCREENS = ['upload', 'jpgpick', 'confirm', 'session', 'processing', 'output'];
 const ALL_SCREENS = ['welcome', ...SCREENS];
 
 const STEP_DEFS = [
-  { key: 'upload', label: 'Upload' },
-  { key: 'confirm', label: 'Confirm' },
+  { key: 'upload', label: 'Template' },
+  { key: 'confirm', label: 'Preview' },
   { key: 'session', label: 'Capture' },
   { key: 'processing', label: 'Processing' },
   { key: 'output', label: 'Done' },
@@ -43,9 +44,12 @@ export class UI {
       stepper: $('#stepper'),
       decoLayer: $('#deco-layer'),
       toast: $('#toast'),
+      toastMessage: $('#toast-message'),
+      toastClose: $('#toast-close'),
       // welcome
       heroStartBtn: $('#hero-start-btn'),
-      // upload
+      // template / upload
+      templateGrid: $('#template-grid'),
       dropzone: $('#dropzone'),
       fileInput: $('#file-input'),
       // jpg pick
@@ -78,6 +82,7 @@ export class UI {
       manualBtn: $('#manual-capture-btn'),
       countdown: $('#countdown'),
       cameraFlash: $('#camera-flash'),
+      stageReady: $('#stage-ready'),
       stripPreview: $('#strip-preview'),
       filledLabel: $('#filled-label'),
       // processing
@@ -93,6 +98,7 @@ export class UI {
       confetti: $('#confetti'),
     };
     for (const name of ALL_SCREENS) this.el.screens[name] = $(`#screen-${name}`);
+    this.el.toastClose.addEventListener('click', () => this.hideToast());
     this._toastTimer = null;
     this._confettiRaf = null;
     this._procTimer = null;
@@ -112,7 +118,8 @@ export class UI {
       return;
     }
     this.el.stepper.hidden = false;
-    const cur = SCREENS.indexOf(currentScreen);
+    const stepKey = currentScreen === 'jpgpick' ? 'upload' : currentScreen;
+    const cur = STEP_DEFS.findIndex((def) => def.key === stepKey);
     this.el.stepper.innerHTML = '';
     STEP_DEFS.forEach((def, i) => {
       const done = i < cur;
@@ -130,6 +137,49 @@ export class UI {
         sep.className = 'step-sep' + (done ? ' done' : '');
         this.el.stepper.appendChild(sep);
       }
+    });
+  }
+
+  // --- Template chooser -----------------------------------------------------
+  /**
+   * Build the built-in template cards and insert them before the upload
+   * dropzone. `onSelect(id)` fires when a card is clicked.
+   */
+  renderTemplateCards(onSelect) {
+    const grid = this.el.templateGrid;
+    const dropzone = this.el.dropzone;
+    // Remove any previously injected cards (keep the dropzone).
+    grid.querySelectorAll('.template-card.builtin').forEach((n) => n.remove());
+    TEMPLATE_ORDER.forEach((id) => {
+      const tpl = TEMPLATES[id];
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'template-card builtin';
+      card.dataset.template = id;
+      const canvas = document.createElement('canvas');
+      canvas.className = 'template-card-preview';
+      paintCardPreview(canvas, id, 150);
+      const name = document.createElement('span');
+      name.className = 'template-card-name';
+      name.textContent = tpl.name;
+      const badge = document.createElement('span');
+      badge.className = 'template-card-badge';
+      badge.textContent = tpl.badge;
+      card.append(canvas, name, badge);
+      card.addEventListener('click', () => {
+        this.setSelectedTemplate(id);
+        onSelect(id);
+      });
+      grid.insertBefore(card, dropzone);
+    });
+  }
+
+  /** Highlight the chosen card (or the upload card for 'custom'). */
+  setSelectedTemplate(id) {
+    const grid = this.el.templateGrid;
+    grid.querySelectorAll('.template-card').forEach((c) => {
+      const match = id === 'custom' ? c === this.el.dropzone : c.dataset.template === id;
+      c.classList.toggle('selected', match);
     });
   }
 
@@ -169,16 +219,31 @@ export class UI {
   }
 
   // --- Toast ----------------------------------------------------------------------
-  showToast(message) {
+  /**
+   * Show a toast. Pass `{ persistent: true }` for errors that must stay
+   * visible until the user dismisses them via the ✕ button (no auto-hide).
+   */
+  showToast(message, { persistent = false } = {}) {
     const t = this.el.toast;
     if (!t) return;
     clearTimeout(this._toastTimer);
-    t.textContent = message;
+    this.el.toastMessage.textContent = message;
+    this.el.toastClose.hidden = !persistent;
     t.hidden = false;
-    t.classList.remove('show');
+    t.classList.remove('show', 'persistent');
     void t.offsetWidth; // restart animation
-    t.classList.add('show');
-    this._toastTimer = setTimeout(() => { t.hidden = true; }, 2600);
+    if (persistent) {
+      t.classList.add('persistent');
+    } else {
+      t.classList.add('show');
+      this._toastTimer = setTimeout(() => { t.hidden = true; }, 2600);
+    }
+  }
+
+  hideToast() {
+    clearTimeout(this._toastTimer);
+    this.el.toast.hidden = true;
+    this.el.toast.classList.remove('show', 'persistent');
   }
 
   // --- JPG color picker + loupe --------------------------------------------
@@ -310,6 +375,19 @@ export class UI {
     }
   }
 
+  /**
+   * Enable/disable the trigger pills. `available` is a map like
+   * { voice: bool, gesture: bool, manual: true }. Unavailable pills are
+   * disabled so the user can only pick modes that will actually work.
+   */
+  setTriggerAvailability(available) {
+    for (const pill of this.el.triggerRow.children) {
+      const ok = !!available[pill.dataset.trigger];
+      pill.disabled = !ok;
+      pill.classList.toggle('unavailable', !ok);
+    }
+  }
+
   setProgress(current, total) {
     this.el.progress.textContent = `Photo ${current} of ${total}`;
   }
@@ -414,11 +492,11 @@ export class UI {
    * @param {() => void} [onTick] fired each tick (for shutter sound etc.)
    */
   async playCountdown(start, tickMs, onTick) {
+    this.hideStageReady();
     const el = this.el.countdown;
     el.hidden = false;
     const steps = [];
     for (let n = start; n >= 1; n--) steps.push(String(n));
-    steps.push('📸');
     for (const s of steps) {
       el.textContent = s;
       el.classList.remove('pop');
@@ -428,6 +506,7 @@ export class UI {
       if (onTick) onTick(s);
       await new Promise((r) => setTimeout(r, tickMs));
     }
+    el.textContent = '';
     el.hidden = true;
     this.fireFlash();
   }
@@ -440,6 +519,28 @@ export class UI {
     void flash.offsetWidth;
     flash.classList.add('fire');
     setTimeout(() => { flash.hidden = true; }, 500);
+  }
+
+  /**
+   * Show the "get ready" banner at the bottom of the camera stage, with a
+   * mode-specific instruction, in the gap between shots. Closed automatically
+   * by `playCountdown()` the instant the next countdown starts.
+   */
+  showStageReady(text) {
+    const el = this.el.stageReady;
+    if (!el) return;
+    el.textContent = text;
+    el.hidden = false;
+    el.classList.remove('show');
+    void el.offsetWidth; // restart animation
+    el.classList.add('show');
+  }
+
+  hideStageReady() {
+    const el = this.el.stageReady;
+    if (!el) return;
+    el.hidden = true;
+    el.classList.remove('show');
   }
 
   // --- Processing -------------------------------------------------------------

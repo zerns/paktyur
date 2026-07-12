@@ -387,6 +387,49 @@ button.ghost {
 .dropzone p { margin: 0 0 6px; font-size: 1.05rem; font-weight: 700; color: var(--ink); font-family: var(--font-display); }
 .dropzone small { color: var(--muted-2); }
 
+/* --- Template chooser ----------------------------------------------------------- */
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 20px;
+  align-items: end;
+  justify-items: center;
+  max-width: 1080px;
+  margin: 0 auto;
+}
+.template-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 12px 16px;
+  border: 2px solid transparent;
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, .6);
+  cursor: pointer;
+  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+  width: 100%;
+  max-width: 210px;
+}
+.template-card:hover, .template-card:focus { transform: translateY(-6px); outline: none; }
+.template-card.selected {
+  border-color: var(--coral);
+  box-shadow: 0 12px 30px -14px rgba(255, 107, 107, .6);
+}
+.template-card-preview { max-width: 130px; height: auto; border-radius: 10px; display: block; }
+.template-card-name { font-family: var(--font-display); font-weight: 600; font-size: 15px; color: var(--ink); }
+.template-card-badge {
+  font-size: 11.5px; font-weight: 800; color: var(--coral);
+  background: rgba(255, 107, 107, .12); padding: 2px 9px; border-radius: 999px;
+}
+/* Upload card sits inside the grid — drop the standalone sizing. */
+.dropzone.template-card {
+  max-width: 210px;
+  margin: 0;
+  padding: 40px 16px;
+  justify-content: center;
+}
+
 /* --- Canvases ------------------------------------------------------------------- */
 .fit-canvas {
   max-width: 100%;
@@ -555,7 +598,14 @@ button.ghost {
   color: var(--muted);
   transition: all .15s ease;
 }
+.trigger-pill { cursor: pointer; }
+.trigger-pill:hover:not(:disabled) { border-color: var(--coral); transform: translateY(-1px); }
 .trigger-pill.active { border-color: var(--coral); background: var(--coral); color: #fff; }
+.trigger-pill.unavailable, .trigger-pill:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+  transform: none;
+}
 
 .mic-note { text-align: center; color: var(--faint); font-size: 12.5px; margin: 0 0 14px; min-height: 16px; }
 
@@ -605,6 +655,24 @@ button.ghost {
   background: rgba(0, 0, 0, .28);
 }
 .countdown.pop { animation: pkPop .5s ease; }
+
+/* --- Stage "ready for next photo" banner ------------------------------------------- */
+.stage-ready {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 14px 18px calc(14px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(to top, rgba(0, 0, 0, .72), rgba(0, 0, 0, 0));
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 16px;
+  text-align: center;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, .3);
+}
+.stage-ready.show { animation: pkFadeUp .35s ease both; }
+.stage-ready[hidden] { display: none; }
 
 /* --- Processing --------------------------------------------------------------------- */
 #screen-processing { align-items: center; text-align: center; padding-top: 40px; min-height: 55vh; justify-content: center; }
@@ -738,6 +806,9 @@ button.ghost {
   bottom: 34px;
   transform: translateX(-50%);
   z-index: 80;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   background: var(--ink);
   color: #fff;
   font-family: var(--font-display);
@@ -748,7 +819,28 @@ button.ghost {
   box-shadow: 0 18px 40px -16px rgba(0, 0, 0, .5);
 }
 .toast.show { animation: pkToast 2.6s ease forwards; }
+.toast.persistent { animation: none !important; opacity: 1; transform: translateX(-50%); }
 .toast[hidden] { display: none; }
+.toast-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, .16);
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: #fff;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.toast-close:hover { background: rgba(255, 255, 255, .3); }
+.toast-close[hidden] { display: none; }
 
 /* --- Responsive --------------------------------------------------------------------------- */
 @media (max-width: 900px) {

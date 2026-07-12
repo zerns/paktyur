@@ -11,7 +11,8 @@ import {
   DEFAULT_COLOR_TOLERANCE,
   COUNTDOWN_START,
   COUNTDOWN_TICK_MS,
-} from './config.js';
+  PROCESSING_MIN_MS,
+} from './config.js?v=d179be81';
 import {
   features,
   isOnline,
@@ -23,7 +24,7 @@ import {
   createDisposerBag,
   on,
   $,
-} from './utils.js';
+} from './utils.js?v=d179be81';
 import {
   decode,
   validateDimensions,
@@ -32,12 +33,13 @@ import {
   composite,
   exportPNG,
   createCanvas,
-} from './imageProcessor.js';
-import { detectPlaceholders } from './placeholderDetector.js';
-import { Camera } from './camera.js';
-import { VoiceTrigger, requestMicPermission } from './microphone.js';
-import { GestureTrigger } from './gesture.js';
-import { UI } from './ui.js';
+} from './imageProcessor.js?v=d179be81';
+import { detectPlaceholders } from './placeholderDetector.js?v=d179be81';
+import { renderTemplate } from './templates.js?v=d179be81';
+import { Camera } from './camera.js?v=d179be81';
+import { VoiceTrigger, requestMicPermission } from './microphone.js?v=d179be81';
+import { GestureTrigger } from './gesture.js?v=d179be81';
+import { UI } from './ui.js?v=d179be81';
 
 const State = {
   WELCOME: 'welcome',
@@ -93,7 +95,8 @@ class App {
     // Welcome.
     this.bag.add(on(el.heroStartBtn, 'click', () => this._enter(State.UPLOAD)));
 
-    // Upload.
+    // Template chooser (built-in cards) + upload.
+    this.ui.renderTemplateCards((id) => this._selectDefaultTemplate(id));
     this.bag.add(on(el.fileInput, 'change', (e) => this._onFile(e.target.files?.[0])));
     this.bag.add(on(el.dropzone, 'click', () => el.fileInput.click()));
     this.bag.add(on(el.dropzone, 'dragover', (e) => { e.preventDefault(); el.dropzone.classList.add('drag'); }));
@@ -122,6 +125,10 @@ class App {
     // Session.
     this.bag.add(on(el.manualBtn, 'click', () => this._triggerCapture()));
     this.bag.add(on(el.cameraSelect, 'change', (e) => this._switchCamera(e.target.value)));
+    // Trigger mode pills — let the user switch capture method live.
+    for (const pill of el.triggerRow.children) {
+      this.bag.add(on(pill, 'click', () => this._setTriggerMode(pill.dataset.trigger)));
+    }
 
     // Output.
     this.bag.add(on(el.downloadBtn, 'click', () => this._download()));
@@ -141,6 +148,7 @@ class App {
     this.state = state;
     this.ui.show(state);
     this.ui.renderStepper(state);
+    if (state === State.UPLOAD) this.ui.setSelectedTemplate(null);
     if (state !== State.SESSION) this._teardownSession();
     if (state !== State.OUTPUT) this.ui.stopConfetti();
     if (state !== State.PROCESSING) this.ui.stopProcessingCaptions();
@@ -156,17 +164,36 @@ class App {
       closeBitmap(this.template);
       this.template = bitmap;
       this.mode = mode;
-
-      this.ui.showToast('Template uploaded! ✨');
+      this.ui.setSelectedTemplate('custom');
 
       if (mode === 'png') {
+        // Wait until detection resolves before announcing success — an
+        // immediate success toast would silently overwrite (and then
+        // auto-fade) a still-unacknowledged persistent error toast.
         await this._runPngDetection();
       } else {
         this.pickedColor = null;
         this.tolerance = DEFAULT_COLOR_TOLERANCE;
         this._enter(State.JPGPICK);
         this._setupJpgPick();
+        this.ui.showToast('Template uploaded! ✨');
       }
+    } catch (err) {
+      this.ui.showToast(err.message);
+    }
+  }
+
+  // === Built-in template: generate a real frame bitmap =====================
+  async _selectDefaultTemplate(id) {
+    try {
+      const { bitmap, size, placeholders } = await renderTemplate(id);
+      closeBitmap(this.template);
+      this.template = bitmap;
+      this.templateSize = size;
+      this.mode = 'png'; // transparent slots — same composite path as an uploaded PNG
+      this.pickedColor = null;
+      this.detection = { total: placeholders.length, valid: placeholders, rejected: [] };
+      this._showConfirm();
     } catch (err) {
       this.ui.showToast(err.message);
     }
@@ -177,10 +204,31 @@ class App {
     try {
       const imageData = toImageData(this.template, this.workCanvas);
       this.detection = await detectPlaceholders(imageData, 'png');
+      if (this._reportEmptyDetection()) return;
+      this.ui.showToast('Template uploaded! ✨');
       this._showConfirm();
     } catch (err) {
       this.ui.showToast(`Detection failed: ${err.message}`);
     }
+  }
+
+  /**
+   * Tell the user *immediately* if a freshly uploaded template has no usable
+   * photo areas (or too many), instead of waiting for the "Start Taking
+   * Photos" click. Returns true when detection is unusable (caller should not
+   * advance to the preview).
+   */
+  _reportEmptyDetection() {
+    const n = this.detection.valid.length;
+    if (n < MIN_PHOTOS) {
+      this.ui.showToast('No photo areas found — use a template with transparent (PNG) or solid-color (JPG) holes.', { persistent: true });
+      return true;
+    }
+    if (n > MAX_PHOTOS) {
+      this.ui.showToast(`Too many photo areas (${n}). Maximum is ${MAX_PHOTOS}.`, { persistent: true });
+      return true;
+    }
+    return false;
   }
 
   // === Step 3 (JPG): color pick + detection ================================
@@ -224,6 +272,7 @@ class App {
         color: this.pickedColor,
         tolerance: this.tolerance,
       });
+      if (this._reportEmptyDetection()) return;
       this._showConfirm();
     } catch (err) {
       this.ui.showToast(`Detection failed: ${err.message}`);
@@ -239,11 +288,8 @@ class App {
   }
 
   _confirmDetection() {
-    const n = this.detection.valid.length;
-    if (n < MIN_PHOTOS || n > MAX_PHOTOS) {
-      this.ui.showToast(`Need ${MIN_PHOTOS}–${MAX_PHOTOS} placeholders, found ${n}`);
-      return;
-    }
+    // Detection was already validated when the template was chosen/uploaded,
+    // so reaching the preview guarantees a usable strip — just start.
     this._startSession();
   }
 
@@ -279,41 +325,76 @@ class App {
     this._armCurrent();
   }
 
+  /** Which trigger modes are usable right now. */
+  _availability() {
+    return {
+      voice: !!(this._micOk && VoiceTrigger.supported),
+      gesture: isOnline(),
+      manual: true,
+    };
+  }
+
   /**
-   * Decide the trigger: voice if mic + SpeechRecognition; else gesture if
-   * online + MediaPipe loads; else manual button. Gesture is disabled offline.
+   * Pick a sensible default trigger, then let the user switch between any
+   * available mode via the pills. Preference: voice → gesture → manual.
    */
   async _chooseTriggerMode(micOk) {
-    this._teardownTriggers();
-
+    this._micOk = micOk;
     this.ui.setTriggerHint('');
+    const avail = this._availability();
+    this.ui.setTriggerAvailability(avail);
 
     if (micOk && VoiceTrigger.supported) {
       this.ui.setMicStatus('ready', true);
+    } else if (micOk && !VoiceTrigger.supported) {
+      this.ui.setMicStatus('no speech engine', false);
+      this.ui.setTriggerHint('Voice trigger needs Chrome or Edge.');
+    } else {
+      this.ui.setMicStatus('unavailable', false);
+    }
+
+    const preferred = avail.voice ? 'voice' : avail.gesture ? 'gesture' : 'manual';
+    await this._startTrigger(preferred);
+  }
+
+  /**
+   * Switch to a user-chosen trigger mode. Ignores unavailable modes.
+   */
+  async _setTriggerMode(mode) {
+    if (this.state !== State.SESSION) return;
+    if (!this._availability()[mode]) return;
+    if (mode === this.triggerMode) return;
+    const bannerShowing = !this.ui.el.stageReady.hidden;
+    await this._startTrigger(mode);
+    if (bannerShowing) this.ui.showStageReady(this._instructionFor(mode));
+    this._armCurrent();
+  }
+
+  /** Ready-state instruction copy for a trigger mode — shared by the side
+   * panel status line and the stage "get ready" banner between shots. */
+  _instructionFor(mode) {
+    if (mode === 'voice') return 'Say “Cheese”';
+    if (mode === 'gesture') return 'Show a ✌️ hand sign to begin.';
+    return 'Tap “Capture” to take each photo.';
+  }
+
+  /** Tear down the current trigger and start `mode`. */
+  async _startTrigger(mode) {
+    this._teardownTriggers();
+    this.ui.showManualButton(mode === 'manual');
+    this.triggerMode = mode;
+    this.ui.setTriggerMode(mode);
+
+    if (mode === 'voice') {
       this.voice = new VoiceTrigger(() => this._triggerCapture(), (s) => this.ui.setTriggerStatus(s));
       try {
         this.voice.start();
-        this.triggerMode = 'voice';
-        this.ui.showManualButton(false);
-        this.ui.setTriggerMode('voice');
-        this.ui.setTriggerStatus('Say “Cheese”');
-        return;
+        this.ui.setTriggerStatus(this._instructionFor('voice'));
       } catch {
         this.voice = null;
+        this.ui.setTriggerStatus('Voice unavailable — pick another mode.');
       }
-    }
-
-    // Explain why voice is off so the fallback isn't confusing.
-    if (micOk && !VoiceTrigger.supported) {
-      this.ui.setMicStatus('no speech engine', false);
-      this.ui.setTriggerHint('Voice trigger needs Chrome or Edge. Using gesture / manual capture instead.');
-    } else if (!micOk) {
-      this.ui.setMicStatus('unavailable', false);
-      this.ui.setTriggerHint('Microphone unavailable — using gesture / manual capture.');
-    }
-
-    // Gesture fallback — needs the network.
-    if (isOnline()) {
+    } else if (mode === 'gesture') {
       this.gesture = new GestureTrigger(
         this.ui.el.video,
         () => this._triggerCapture(),
@@ -322,41 +403,27 @@ class App {
       try {
         this.ui.setTriggerStatus('Loading gesture engine…');
         await this.gesture.start();
-        this.triggerMode = 'gesture';
-        this.ui.showManualButton(false);
-        this.ui.setTriggerMode('gesture');
-        this.ui.setTriggerStatus('Show a ✌️ hand sign to begin.');
-        return;
+        this.ui.setTriggerStatus(this._instructionFor('gesture'));
       } catch (err) {
         this.gesture?.stop();
         this.gesture = null;
         this.ui.setTriggerStatus(err.message);
       }
     } else {
-      this.ui.setTriggerStatus('Gesture needs internet — offline.');
+      this.ui.setTriggerStatus(this._instructionFor('manual'));
     }
-
-    // Last resort: manual capture button.
-    this.triggerMode = 'manual';
-    this.ui.showManualButton(true);
-    this.ui.setTriggerMode('manual');
-    this.ui.setTriggerStatus('Tap “Capture” to take each photo.');
   }
 
   /** Re-evaluate gesture availability when connectivity changes mid-session. */
   _onConnectivityChange() {
     if (this.state !== State.SESSION) return;
+    this.ui.setTriggerAvailability(this._availability());
     if (this.triggerMode === 'gesture' && !isOnline()) {
       // Lost network while relying on gesture → fall back to manual.
-      this._teardownTriggers();
-      this.triggerMode = 'manual';
-      this.ui.showManualButton(true);
-      this.ui.setTriggerMode('manual');
-      this.ui.setTriggerStatus('Connection lost — gesture disabled. Tap “Capture”.');
-    } else if (this.triggerMode === 'manual' && isOnline() && !this.voice) {
-      // Network returned and we have no voice → try to (re)enable gesture.
-      this._chooseTriggerMode(false);
-      this._armCurrent();
+      this._startTrigger('manual').then(() => {
+        this.ui.setTriggerStatus('Connection lost — gesture disabled. Tap “Capture”.');
+        this._armCurrent();
+      });
     }
   }
 
@@ -411,6 +478,7 @@ class App {
     if (this.activeIndex < this.detection.valid.length) {
       this.ui.setProgress(this.activeIndex + 1, this.detection.valid.length);
       this.ui.setTriggerStatus('Prepare for the next photo.');
+      this.ui.showStageReady(this._instructionFor(this.triggerMode));
       this._refreshOverlay();
       this._armCurrent();
     } else {
@@ -423,17 +491,21 @@ class App {
     this._teardownSession();
     this._enter(State.PROCESSING);
     this.ui.startProcessingCaptions();
-    // Yield so the processing screen paints before heavy compositing.
-    await new Promise((r) => setTimeout(r, 30));
+    // Hold the screen visible for a minimum duration — compositing alone is
+    // near-instant and would otherwise skip past "Great job!" unseen.
+    const minDelay = new Promise((r) => setTimeout(r, PROCESSING_MIN_MS));
     try {
-      const canvas = composite(
-        this.template,
-        this.mode,
-        this.detection.valid,
-        this.photos,
-        this.workCanvas
-      );
-      const blob = await exportPNG(canvas);
+      const work = (async () => {
+        const canvas = composite(
+          this.template,
+          this.mode,
+          this.detection.valid,
+          this.photos,
+          this.workCanvas
+        );
+        return exportPNG(canvas);
+      })();
+      const [blob] = await Promise.all([work, minDelay]);
       if (this.outputUrl) revokeObjectUrl(this.outputUrl);
       this.outputUrl = trackObjectUrl(URL.createObjectURL(blob));
       this.ui.setOutputImage(this.outputUrl);

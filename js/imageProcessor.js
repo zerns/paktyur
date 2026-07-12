@@ -4,8 +4,8 @@
  * createImageBitmap where available, and reuses canvases to limit copies.
  */
 
-import { MAX_WIDTH, MAX_HEIGHT } from './config.js';
-import { features, closeBitmap, trackObjectUrl } from './utils.js';
+import { MAX_WIDTH, MAX_HEIGHT } from './config.js?v=d179be81';
+import { features, closeBitmap, trackObjectUrl } from './utils.js?v=d179be81';
 
 /** Create a 2D drawing surface, preferring OffscreenCanvas. */
 export function createCanvas(width, height) {

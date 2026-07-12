@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Content-Security-Policy" content="script-src 'self' https://static.cloudflareinsights.com; connect-src 'self' https://cloudflareinsights.com;">
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'wasm-unsafe-eval' blob: https://static.cloudflareinsights.com https://cdn.jsdelivr.net; connect-src 'self' https://cloudflareinsights.com https://cdn.jsdelivr.net https://storage.googleapis.com; worker-src blob:;">
   <title>Paktyur! — Photo Booth</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=1.0.0" />
+  <link rel="stylesheet" href="styles.css?v=d179be81" />
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -55,16 +55,19 @@
       </div>
     </section>
 
-    <!-- Step 1: Upload -->
-    <section id="screen-upload" class="screen" hidden aria-label="Upload template">
+    <!-- Step 1: Template -->
+    <section id="screen-upload" class="screen" hidden aria-label="Choose template">
       <div class="screen-head">
         <h2>Pick your vibe 🎨</h2>
-        <p class="muted">Upload a template with PNG transparent holes, or JPG/JPEG solid-color holes.</p>
+        <p class="muted">Choose a ready-made template, or upload your own (PNG transparent holes, or JPG/JPEG solid-color holes).</p>
       </div>
-      <div id="dropzone" class="dropzone" tabindex="0" role="button">
-        <div class="dropzone-icon">📤</div>
-        <p>Drag &amp; drop a template here, or click to browse</p>
-        <small>Max 4000×4000px · PNG / JPG / JPEG</small>
+      <div id="template-grid" class="template-grid">
+        <!-- built-in template cards injected by ui.renderTemplateCards() -->
+        <div id="dropzone" class="dropzone template-card" tabindex="0" role="button">
+          <div class="dropzone-icon">📤</div>
+          <p>Upload your own</p>
+          <small>Drag &amp; drop or click<br>PNG / JPG · up to 4000px</small>
+        </div>
       </div>
       <input id="file-input" type="file" accept="image/png,image/jpeg" hidden />
     </section>
@@ -129,13 +132,14 @@
             <div id="photo-progress" class="stage-pill stage-pill--right">Photo 1 of 1</div>
             <div id="countdown" class="countdown" hidden></div>
             <div id="camera-flash" class="camera-flash" hidden></div>
+            <div id="stage-ready" class="stage-ready" hidden></div>
           </div>
 
           <div class="trigger-panel">
             <div id="trigger-row" class="trigger-row">
-              <span class="trigger-pill" data-trigger="voice">🎙️ Voice</span>
-              <span class="trigger-pill" data-trigger="gesture">✌️ Gesture</span>
-              <span class="trigger-pill" data-trigger="manual">👆 Manual</span>
+              <button type="button" class="trigger-pill" data-trigger="voice">🎙️ Voice</button>
+              <button type="button" class="trigger-pill" data-trigger="gesture">✌️ Gesture</button>
+              <button type="button" class="trigger-pill" data-trigger="manual">👆 Manual</button>
             </div>
             <p id="mic-status" class="mic-note"></p>
             <div class="trigger-card card">
@@ -199,12 +203,15 @@
     </section>
   </main>
 
-  <div id="toast" class="toast" hidden></div>
+  <div id="toast" class="toast" hidden>
+    <span id="toast-message"></span>
+    <button id="toast-close" type="button" class="toast-close" aria-label="Dismiss" hidden>✕</button>
+  </div>
 
   <footer class="app-footer no-print">
     <small>&copy; <span id="footer-year">2026</span> Project Kilaw</small>
   </footer>
 
-  <script type="module" src="js/app.js"></script>
+  <script type="module" src="js/app.js?v=d179be81"></script>
 </body>
 </html>

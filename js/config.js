@@ -79,6 +79,7 @@ export const PROCESSING_MESSAGES = [
   'Almost ready…',
 ];
 export const PROCESSING_TICK_MS = 900;
+export const PROCESSING_MIN_MS = 1800; // minimum time the Processing screen stays visible
 
 export const DECO_EMOJI = [
   '🌈', '✨', '💖', '⭐', '🎈', '🌟', '🎀', '🍭',
