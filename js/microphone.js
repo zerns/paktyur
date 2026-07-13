@@ -7,8 +7,16 @@
  * mode when the mic or speech recognition is unavailable.
  */
 
-import { VOICE_KEYWORDS, VOICE_TIMEOUT_MS, VOICE_MAX_RETRIES } from './config.js?v=cfbed35d';
-import { features } from './utils.js?v=cfbed35d';
+import {
+  VOICE_KEYWORDS,
+  VOICE_TIMEOUT_MS,
+  VOICE_MAX_RETRIES,
+  VOICE_PROMPT_DELAY_MS,
+  PROMPT_SOUND_URL,
+  STT_LAG_MARGIN_MS,
+  EXTRA_MATCH_WINDOW_MS,
+} from './config.js?v=a44fffe3';
+import { features } from './utils.js?v=a44fffe3';
 
 /**
  * Request microphone permission. Returns true if granted.
@@ -38,6 +46,10 @@ export class VoiceTrigger {
     this.listening = false;
     this.retries = 0;
     this.silenceTimer = null;
+    this.promptTimer = null;
+    this.suppressed = false; // true while the cue itself is playing — ignore results
+    this.firedAt = 0; // timestamp of the match that started the current capture
+    this.extraMatchPending = false; // a stray duplicate "cheese" was heard mid-capture
     this.armed = false; // only fire when armed for the current photo
   }
 
@@ -57,13 +69,23 @@ export class VoiceTrigger {
     rec.lang = 'en-US';
 
     rec.onresult = (event) => {
-      if (!this.armed) return;
+      if (this.suppressed) return;
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript.toLowerCase();
         if (VOICE_KEYWORDS.some((kw) => transcript.includes(kw))) {
-          this._resetSilence();
-          this.armed = false; // debounce until re-armed
-          this.onTrigger();
+          if (this.armed) {
+            this._resetSilence();
+            this._clearPrompt();
+            this.armed = false; // debounce until re-armed
+            this.firedAt = Date.now();
+            this.extraMatchPending = false;
+            this.onTrigger();
+          } else if (Date.now() - this.firedAt < EXTRA_MATCH_WINDOW_MS) {
+            // A stray duplicate "cheese" said before this photo finished
+            // capturing — remember it so the next arm() doesn't auto-fire
+            // from a late-arriving recognition result for this utterance.
+            this.extraMatchPending = true;
+          }
           return;
         }
       }
@@ -107,10 +129,76 @@ export class VoiceTrigger {
     this.retries = 0;
     this._resetSilence();
     this.onStatus('Say “Cheese”');
+    this._startPrompt();
+    if (this.extraMatchPending) {
+      // A leftover "cheese" from the previous photo may still be in flight
+      // through recognition — swallow results briefly so it can't fire this
+      // new arm before the user says it again on purpose.
+      this.extraMatchPending = false;
+      this.suppressed = true;
+      setTimeout(() => {
+        this.suppressed = false;
+      }, STT_LAG_MARGIN_MS);
+    }
   }
 
   disarm() {
     this.armed = false;
+    this.suppressed = false;
+    this.extraMatchPending = false;
+    this._clearPrompt();
+  }
+
+  /** Speak "Say cheese" once if the user stays silent after arming. */
+  _startPrompt() {
+    this._clearPrompt();
+    this.promptTimer = setTimeout(() => {
+      if (this.armed) this._speakPrompt();
+    }, VOICE_PROMPT_DELAY_MS);
+  }
+
+  _clearPrompt() {
+    if (this.promptTimer) clearTimeout(this.promptTimer);
+    this.promptTimer = null;
+  }
+
+  /**
+   * Play the recorded "Say cheese" cue through WebAudio — the same output
+   * path as the shutter beep, which is proven audible during a session.
+   * (Both speechSynthesis and a plain <audio> element stayed silent while
+   * SpeechRecognition holds the mic.)
+   */
+  async _speakPrompt() {
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      const ctx = (VoiceTrigger._audioCtx ||= new Ctx());
+      if (ctx.state === 'suspended') await ctx.resume();
+      // Fetch + decode once, then reuse the buffer for every prompt.
+      if (!VoiceTrigger._promptBuffer) {
+        const res = await fetch(PROMPT_SOUND_URL);
+        const data = await res.arrayBuffer();
+        VoiceTrigger._promptBuffer = await ctx.decodeAudioData(data);
+      }
+      const buffer = VoiceTrigger._promptBuffer;
+      const src = ctx.createBufferSource();
+      src.buffer = buffer;
+      src.connect(ctx.destination);
+
+      // The mic can pick up the cue's own "cheese" and self-trigger a
+      // capture. SpeechRecognition results lag noticeably behind the audio
+      // that produced them (cloud STT round-trip), so unsuppressing right
+      // when playback ends isn't enough — keep ignoring results for a bit
+      // after the cue finishes too.
+      this.suppressed = true;
+      setTimeout(() => {
+        this.suppressed = false;
+      }, buffer.duration * 1000 + STT_LAG_MARGIN_MS);
+
+      src.start();
+    } catch {
+      /* audio cue is optional */
+    }
   }
 
   _resetSilence() {
@@ -130,6 +218,9 @@ export class VoiceTrigger {
   stop() {
     this.listening = false;
     this.armed = false;
+    this.suppressed = false;
+    this.extraMatchPending = false;
+    this._clearPrompt();
     if (this.silenceTimer) clearTimeout(this.silenceTimer);
     this.silenceTimer = null;
     if (this.recognition) {
