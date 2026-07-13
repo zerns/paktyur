@@ -132,7 +132,17 @@ h2 { margin: 0 0 6px; font-size: clamp(1.5rem, 3.2vw, 2.1rem); }
   font-size: 22px;
   box-shadow: 0 8px 18px -6px rgba(255, 107, 107, .65);
 }
-.brand-word { font-family: var(--font-display); font-weight: 700; font-size: 22px; color: var(--ink); }
+.brand-word {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 22px;
+  background: linear-gradient(100deg, var(--coral), var(--coral-2) 40%, var(--lavender) 75%, var(--aqua));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  background-size: 200% auto;
+}
+.brand-word .brand-bang { -webkit-text-fill-color: initial; color: var(--coral); }
 .brand-bang { color: var(--coral); }
 
 .stepper {
