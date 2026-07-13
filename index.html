@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob: https://static.cloudflareinsights.com https://cdn.jsdelivr.net; connect-src 'self' https://cloudflareinsights.com https://cdn.jsdelivr.net https://storage.googleapis.com; worker-src blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' blob: data:; media-src 'self' blob:; object-src 'none'; base-uri 'none';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob: https://static.cloudflareinsights.com https://cdn.jsdelivr.net https://www.googletagmanager.com 'sha256-CP5HvVz2cE/DNuevbX49UxQGugw3jrcn8j36LF5yRsM='; connect-src 'self' https://cloudflareinsights.com https://cdn.jsdelivr.net https://storage.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com; worker-src blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' blob: data:; media-src 'self' blob:; object-src 'none'; base-uri 'none';">
   <title>Paktyur! — Photo Booth</title>
   <meta name="description" content="Create your own photo booth strip in minutes. Capture hands-free with fun templates and download instantly to share.">
   <link rel="canonical" href="https://paktyur.projectkilaw.com/">
@@ -27,6 +27,15 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
   <link rel="manifest" href="/site.webmanifest">
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-QGH1EDT56E"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-QGH1EDT56E');
+  </script>
 </head>
 <body>
   <!-- Floating decorative emoji, purely cosmetic -->
