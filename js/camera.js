@@ -3,9 +3,9 @@
  * and still-frame capture. Wraps getUserMedia and cleans up tracks fully.
  */
 
-import { CAMERA_CONSTRAINTS } from './config.js?v=cfbed35d';
-import { features } from './utils.js?v=cfbed35d';
-import { frameFromVideo } from './imageProcessor.js?v=cfbed35d';
+import { CAMERA_CONSTRAINTS } from './config.js?v=a44fffe3';
+import { features } from './utils.js?v=a44fffe3';
+import { frameFromVideo } from './imageProcessor.js?v=a44fffe3';
 
 export class Camera {
   constructor(videoEl) {

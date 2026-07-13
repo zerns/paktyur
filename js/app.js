@@ -12,7 +12,7 @@ import {
   COUNTDOWN_START,
   COUNTDOWN_TICK_MS,
   PROCESSING_MIN_MS,
-} from './config.js?v=cfbed35d';
+} from './config.js?v=a44fffe3';
 import {
   features,
   isOnline,
@@ -24,7 +24,7 @@ import {
   createDisposerBag,
   on,
   $,
-} from './utils.js?v=cfbed35d';
+} from './utils.js?v=a44fffe3';
 import {
   decode,
   validateDimensions,
@@ -33,13 +33,13 @@ import {
   composite,
   exportPNG,
   createCanvas,
-} from './imageProcessor.js?v=cfbed35d';
-import { detectPlaceholders } from './placeholderDetector.js?v=cfbed35d';
-import { renderTemplate } from './templates.js?v=cfbed35d';
-import { Camera } from './camera.js?v=cfbed35d';
-import { VoiceTrigger, requestMicPermission } from './microphone.js?v=cfbed35d';
-import { GestureTrigger } from './gesture.js?v=cfbed35d';
-import { UI } from './ui.js?v=cfbed35d';
+} from './imageProcessor.js?v=a44fffe3';
+import { detectPlaceholders } from './placeholderDetector.js?v=a44fffe3';
+import { renderTemplate } from './templates.js?v=a44fffe3';
+import { Camera } from './camera.js?v=a44fffe3';
+import { VoiceTrigger, requestMicPermission } from './microphone.js?v=a44fffe3';
+import { GestureTrigger } from './gesture.js?v=a44fffe3';
+import { UI } from './ui.js?v=a44fffe3';
 
 const State = {
   WELCOME: 'welcome',

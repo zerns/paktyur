@@ -3,7 +3,7 @@
  * resource cleanup registry, debounce, and generic DOM utilities.
  */
 
-import { MAX_FILE_BYTES } from './config.js?v=cfbed35d';
+import { MAX_FILE_BYTES } from './config.js?v=a44fffe3';
 
 // --- Feature detection ------------------------------------------------------
 export const features = {
