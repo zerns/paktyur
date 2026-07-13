@@ -5,6 +5,17 @@
  * resource lifecycle (bitmaps, streams, object URLs, listeners).
  */
 
+// Clickjacking guard. CSP `frame-ancestors` only works as an HTTP header, and
+// GitHub Pages can't set custom headers — so bust out of any framing here.
+// The app requests camera/mic, making UI-redress attacks worth blocking.
+if (window.top !== window.self) {
+  try {
+    window.top.location = window.self.location.href;
+  } catch {
+    document.documentElement.style.display = 'none';
+  }
+}
+
 import {
   MIN_PHOTOS,
   MAX_PHOTOS,
@@ -542,7 +553,7 @@ class App {
     if (!this.outputUrl) return;
     const a = document.createElement('a');
     a.href = this.outputUrl;
-    a.download = `photobooth-${Date.now()}.png`;
+    a.download = `paktyur-${Date.now()}.png`;
     document.body.appendChild(a);
     a.click();
     a.remove();
