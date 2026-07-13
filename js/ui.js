@@ -20,9 +20,9 @@ import {
   DECO_GAP_MS_MIN,
   DECO_GAP_MS_MAX,
   DECO_FADE_MS,
-} from './config.js?v=a44fffe3';
-import { $, clamp } from './utils.js?v=a44fffe3';
-import { TEMPLATES, TEMPLATE_ORDER, paintCardPreview } from './templates.js?v=a44fffe3';
+} from './config.js?v=bb46100c';
+import { $, clamp } from './utils.js?v=bb46100c';
+import { TEMPLATES, TEMPLATE_ORDER, paintCardPreview } from './templates.js?v=bb46100c';
 
 export const SCREENS = ['upload', 'jpgpick', 'confirm', 'session', 'processing', 'output'];
 const ALL_SCREENS = ['welcome', ...SCREENS];

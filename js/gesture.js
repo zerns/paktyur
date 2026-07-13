@@ -14,8 +14,8 @@ import {
   HAND_LANDMARKER_MODEL_URL,
   GESTURE_STABLE_MS,
   GESTURE_COOLDOWN_MS,
-} from './config.js?v=a44fffe3';
-import { isOnline } from './utils.js?v=a44fffe3';
+} from './config.js?v=bb46100c';
+import { isOnline } from './utils.js?v=bb46100c';
 
 // MediaPipe hand landmark indices used for the peace-sign heuristic.
 const LM = {

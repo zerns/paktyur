@@ -15,8 +15,8 @@ import {
   PROMPT_SOUND_URL,
   STT_LAG_MARGIN_MS,
   EXTRA_MATCH_WINDOW_MS,
-} from './config.js?v=a44fffe3';
-import { features } from './utils.js?v=a44fffe3';
+} from './config.js?v=bb46100c';
+import { features } from './utils.js?v=bb46100c';
 
 /**
  * Request microphone permission. Returns true if granted.

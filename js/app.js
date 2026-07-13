@@ -12,7 +12,8 @@ import {
   COUNTDOWN_START,
   COUNTDOWN_TICK_MS,
   PROCESSING_MIN_MS,
-} from './config.js?v=a44fffe3';
+  OUTPUT_DISPLAY_WIDTH,
+} from './config.js?v=bb46100c';
 import {
   features,
   isOnline,
@@ -24,7 +25,7 @@ import {
   createDisposerBag,
   on,
   $,
-} from './utils.js?v=a44fffe3';
+} from './utils.js?v=bb46100c';
 import {
   decode,
   validateDimensions,
@@ -33,13 +34,14 @@ import {
   composite,
   exportPNG,
   createCanvas,
-} from './imageProcessor.js?v=a44fffe3';
-import { detectPlaceholders } from './placeholderDetector.js?v=a44fffe3';
-import { renderTemplate } from './templates.js?v=a44fffe3';
-import { Camera } from './camera.js?v=a44fffe3';
-import { VoiceTrigger, requestMicPermission } from './microphone.js?v=a44fffe3';
-import { GestureTrigger } from './gesture.js?v=a44fffe3';
-import { UI } from './ui.js?v=a44fffe3';
+  downscaleCanvas,
+} from './imageProcessor.js?v=bb46100c';
+import { detectPlaceholders } from './placeholderDetector.js?v=bb46100c';
+import { renderTemplate } from './templates.js?v=bb46100c';
+import { Camera } from './camera.js?v=bb46100c';
+import { VoiceTrigger, requestMicPermission } from './microphone.js?v=bb46100c';
+import { GestureTrigger } from './gesture.js?v=bb46100c';
+import { UI } from './ui.js?v=bb46100c';
 
 const State = {
   WELCOME: 'welcome',
@@ -78,6 +80,7 @@ class App {
     this.activeIndex = 0;
     this.outputUrl = null;
     this.triggerMode = null; // 'voice' | 'gesture' | 'manual'
+    this.builtInTemplate = false; // true for the four generated templates
     this.capturing = false;
     this.workCanvas = this.workCanvas || createCanvas(1, 1);
 
@@ -164,6 +167,7 @@ class App {
       closeBitmap(this.template);
       this.template = bitmap;
       this.mode = mode;
+      this.builtInTemplate = false;
       this.ui.setSelectedTemplate('custom');
 
       if (mode === 'png') {
@@ -190,6 +194,7 @@ class App {
       closeBitmap(this.template);
       this.template = bitmap;
       this.templateSize = size;
+      this.builtInTemplate = true;
       this.mode = 'png'; // transparent slots — same composite path as an uploaded PNG
       this.pickedColor = null;
       this.detection = { total: placeholders.length, valid: placeholders, rejected: [] };
@@ -503,7 +508,12 @@ class App {
           this.photos,
           this.workCanvas
         );
-        return exportPNG(canvas);
+        // Built-in templates export at the display width so the downloaded
+        // file matches the strip shown on screen.
+        const out = this.builtInTemplate
+          ? downscaleCanvas(canvas, OUTPUT_DISPLAY_WIDTH)
+          : canvas;
+        return exportPNG(out);
       })();
       const [blob] = await Promise.all([work, minDelay]);
       if (this.outputUrl) revokeObjectUrl(this.outputUrl);

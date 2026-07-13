@@ -18,8 +18,8 @@ import {
   MAX_PLACEHOLDER_WIDTH,
   MAX_PLACEHOLDER_HEIGHT,
   MAX_PLACEHOLDER_AREA,
-} from './config.js?v=a44fffe3';
-import { nextFrame } from './utils.js?v=a44fffe3';
+} from './config.js?v=bb46100c';
+import { nextFrame } from './utils.js?v=bb46100c';
 
 /**
  * Build a boolean mask (Uint8Array, 1 = candidate pixel) from ImageData.
