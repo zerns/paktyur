@@ -89,6 +89,7 @@ export class UI {
       countdown: $('#countdown'),
       cameraFlash: $('#camera-flash'),
       stageReady: $('#stage-ready'),
+      stageLoading: $('#stage-loading'),
       zoomPanel: $('#zoom-panel'),
       zoomOutBtn: $('#zoom-out-btn'),
       zoomInBtn: $('#zoom-in-btn'),
@@ -583,6 +584,7 @@ export class UI {
     el.hidden = false;
     const steps = [];
     for (let n = start; n >= 1; n--) steps.push(String(n));
+    steps.push('CLICK!');
     for (const s of steps) {
       el.textContent = s;
       el.classList.remove('pop');
@@ -627,6 +629,24 @@ export class UI {
     if (!el) return;
     el.hidden = true;
     el.classList.remove('show');
+  }
+
+  /** Placeholder shown over the camera stage while the stream warms up. */
+  showStageLoading() {
+    const el = this.el.stageLoading;
+    if (!el) return;
+    el.classList.remove('fade-out');
+    el.hidden = false;
+  }
+
+  hideStageLoading() {
+    const el = this.el.stageLoading;
+    if (!el) return;
+    el.classList.add('fade-out');
+    el.addEventListener('transitionend', () => {
+      el.hidden = true;
+      el.classList.remove('fade-out');
+    }, { once: true });
   }
 
   // --- Processing -------------------------------------------------------------

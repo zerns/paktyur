@@ -24,6 +24,7 @@ const {
   COUNTDOWN_START,
   COUNTDOWN_TICK_MS,
   PROCESSING_MIN_MS,
+  STAGE_LOADING_MIN_MS,
   OUTPUT_DISPLAY_WIDTH,
   ZOOM_STEP,
   ZOOM_PINCH_MIN,
@@ -351,6 +352,8 @@ class App {
     this.camera = new Camera(this.ui.el.video);
     this.ui.setCameraStatus('requesting…', false);
     this.ui.setMicStatus('requesting…', false);
+    this.ui.showStageLoading();
+    const loadingShownAt = performance.now();
 
     // Request camera (required).
     try {
@@ -362,6 +365,7 @@ class App {
       const cams = await this.camera.listCameras();
       this.ui.populateCameras(cams, this.camera.deviceId);
     } catch (err) {
+      this.ui.hideStageLoading();
       this.ui.setCameraStatus('unavailable', false);
       this.ui.showToast(err.message);
       return;
@@ -375,6 +379,11 @@ class App {
     requestAnimationFrame(() => this._refreshOverlay());
     this._armCurrent();
     this._setZoomIdle(true);
+
+    // Everything (camera, trigger panel, strip) is ready — drop the placeholder,
+    // keeping it up a minimum beat so it doesn't flash for a single frame.
+    const remaining = Math.max(0, STAGE_LOADING_MIN_MS - (performance.now() - loadingShownAt));
+    setTimeout(() => this.ui.hideStageLoading(), remaining);
   }
 
   /**

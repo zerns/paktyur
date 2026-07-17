@@ -572,6 +572,21 @@ button.ghost {
   display: block;
   background: #241b22;
 }
+.stage-loading {
+  position: absolute; inset: 0; z-index: 4;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 22px;
+  background: linear-gradient(140deg, #F7C7DC 0%, #E7C3EC 45%, #C3A8E8 100%);
+  opacity: 1;
+  transition: opacity .6s ease;
+}
+.stage-loading.fade-out { opacity: 0; }
+.stage-loading[hidden] { display: none; }
+.stage-loading-emoji { font-size: 56px; animation: pkFloat 2.4s ease-in-out infinite; }
+.stage-loading-text {
+  font-family: var(--font-display); font-weight: 700; font-size: 22px;
+  color: #fff; text-shadow: 0 2px 8px rgba(120, 60, 110, .35);
+}
 .overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .stage-guide {
   position: absolute;
