@@ -7,7 +7,6 @@
  * mode when the mic or speech recognition is unavailable.
  */
 
-const V = new URL(import.meta.url).search;
 const {
   VOICE_KEYWORDS,
   VOICE_TIMEOUT_MS,
@@ -17,8 +16,8 @@ const {
   STT_LAG_MARGIN_MS,
   EXTRA_MATCH_WINDOW_MS,
   ZOOM_VOICE_KEYWORDS,
-} = await import('./config.js' + V);
-const { features } = await import('./utils.js' + V);
+} = await import('./config.js?v=a762155');
+const { features } = await import('./utils.js?v=55065fc');
 
 /**
  * Request microphone permission. Returns true if granted.

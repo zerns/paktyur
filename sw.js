@@ -1,4 +1,4 @@
-const CACHE_NAME = 'paktyur-cache-v7';
+const CACHE_NAME = 'paktyur-cache-60a3005';
 const PRECACHE_URLS = [
   '/',
   '/index.html',
@@ -28,18 +28,30 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
+  const cacheAndReturn = (response) => {
+    if (response.ok) {
+      const clone = response.clone();
+      caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+    }
+    return response;
+  };
+
+  // Navigations/HTML: network-first so a freshly-stamped index.html (with new
+  // ?v= hashes) is seen immediately online; fall back to cache when offline.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then(cacheAndReturn)
+        .catch(() => caches.match(event.request).then((c) => c || caches.match('/index.html')))
+    );
+    return;
+  }
+
+  // Hashed assets (js/css) + everything else: stale-while-revalidate. Safe —
+  // a content change means a new ?v=, i.e. a new cache key, so no staleness.
   event.respondWith(
     caches.match(event.request).then((cached) => {
-      const network = fetch(event.request)
-        .then((response) => {
-          if (response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          }
-          return response;
-        })
-        .catch(() => cached);
-
+      const network = fetch(event.request).then(cacheAndReturn).catch(() => cached);
       return cached || network;
     })
   );

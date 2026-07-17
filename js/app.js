@@ -16,7 +16,6 @@ if (window.top !== window.self) {
   }
 }
 
-const V = new URL(import.meta.url).search; // "?v=<hash>" — single source, propagated to all module imports
 const {
   MIN_PHOTOS,
   MAX_PHOTOS,
@@ -29,7 +28,7 @@ const {
   ZOOM_STEP,
   ZOOM_PINCH_MIN,
   ZOOM_PINCH_MAX,
-} = await import('./config.js' + V);
+} = await import('./config.js?v=a762155');
 const {
   features,
   isOnline,
@@ -42,7 +41,7 @@ const {
   clamp,
   on,
   $,
-} = await import('./utils.js' + V);
+} = await import('./utils.js?v=55065fc');
 const {
   decode,
   validateDimensions,
@@ -52,13 +51,13 @@ const {
   exportPNG,
   createCanvas,
   downscaleCanvas,
-} = await import('./imageProcessor.js' + V);
-const { detectPlaceholders } = await import('./placeholderDetector.js' + V);
-const { renderTemplate } = await import('./templates.js' + V);
-const { Camera } = await import('./camera.js' + V);
-const { VoiceTrigger, requestMicPermission } = await import('./microphone.js' + V);
-const { GestureTrigger } = await import('./gesture.js' + V);
-const { UI } = await import('./ui.js' + V);
+} = await import('./imageProcessor.js?v=a816397');
+const { detectPlaceholders } = await import('./placeholderDetector.js?v=cb5d915');
+const { renderTemplate } = await import('./templates.js?v=ea8e10a');
+const { Camera } = await import('./camera.js?v=27ea3a6');
+const { VoiceTrigger, requestMicPermission } = await import('./microphone.js?v=c66a57a');
+const { GestureTrigger } = await import('./gesture.js?v=916a357');
+const { UI } = await import('./ui.js?v=0a7a2ee');
 
 // GA4 may be blocked (adblock/offline) — gtag can be undefined.
 function track(name, params) {

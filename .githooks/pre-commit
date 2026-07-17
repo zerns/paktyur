@@ -1,0 +1,7 @@
+#!/bin/sh
+# Stamp per-file content-hash cache-busting versions before each commit, then
+# fold the restamped files into the commit. Enable once with:
+#   git config core.hooksPath .githooks
+set -e
+node scripts/stamp-versions.mjs
+git add -u index.html styles.css sw.js js/

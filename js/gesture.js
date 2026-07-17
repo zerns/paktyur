@@ -8,7 +8,6 @@
  * a manual capture button.
  */
 
-const V = new URL(import.meta.url).search;
 const {
   MEDIAPIPE_VISION_URL,
   MEDIAPIPE_WASM_ROOT,
@@ -16,8 +15,8 @@ const {
   GESTURE_STABLE_MS,
   GESTURE_COOLDOWN_MS,
   ZOOM_GESTURE_THROTTLE_MS,
-} = await import('./config.js' + V);
-const { isOnline } = await import('./utils.js' + V);
+} = await import('./config.js?v=a762155');
+const { isOnline } = await import('./utils.js?v=55065fc');
 
 // MediaPipe hand landmark indices used for the peace-sign heuristic.
 const LM = {

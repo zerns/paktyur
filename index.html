@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=20260717c" />
+  <link rel="stylesheet" href="styles.css?v=ff27c71" />
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -258,9 +258,10 @@
     <small>&copy; <span id="footer-year">2026</span> Project Kilaw</small>
   </footer>
 
-  <!-- Cache-bust version — SINGLE SOURCE. Bump this ?v= to invalidate all JS modules;
-       every module inherits it via import.meta.url propagation. -->
-  <script type="module" src="js/app.js?v=20260717c"></script>
+  <!-- Cache-bust version — content-hashed per file by scripts/stamp-versions.mjs
+       (run automatically via the pre-commit hook). Each ?v= changes only when the
+       referenced file's contents change, so only changed files refetch. -->
+  <script type="module" src="js/app.js?v=6704ad0"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

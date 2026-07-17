@@ -10,7 +10,6 @@
  * area limits and sorted top->bottom, then left->right.
  */
 
-const V = new URL(import.meta.url).search;
 const {
   ALPHA_TRANSPARENT_THRESHOLD,
   MIN_PLACEHOLDER_WIDTH,
@@ -19,8 +18,8 @@ const {
   MAX_PLACEHOLDER_WIDTH,
   MAX_PLACEHOLDER_HEIGHT,
   MAX_PLACEHOLDER_AREA,
-} = await import('./config.js' + V);
-const { nextFrame } = await import('./utils.js' + V);
+} = await import('./config.js?v=a762155');
+const { nextFrame } = await import('./utils.js?v=55065fc');
 
 /**
  * Build a boolean mask (Uint8Array, 1 = candidate pixel) from ImageData.
