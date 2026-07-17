@@ -54,7 +54,7 @@ const { renderTemplate } = await import('./templates.js?v=ea8e10a');
 const { Camera } = await import('./camera.js?v=89af3e7');
 const { VoiceTrigger, requestMicPermission } = await import('./microphone.js?v=6170dd8');
 const { GestureTrigger } = await import('./gesture.js?v=53fcfc8');
-const { UI } = await import('./ui.js?v=aabceb2');
+const { UI } = await import('./ui.js?v=2f204e5');
 
 // GA4 may be blocked (adblock/offline) — gtag can be undefined.
 function track(name, params) {

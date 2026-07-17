@@ -204,11 +204,14 @@ export class UI {
       { left: [3, 15], top: [45, 82], name: 'bl' },
       { left: [80, 93], top: [45, 82], name: 'br' },
     ];
-    for (let q = 0; q < 4; q++) {
-      this._spawnDecoSlot(q, false);
-    }
+    const order = this._decoSmall() ? [0, 3] : [0, 1, 2, 3]; // small: tl+br only
+    order.forEach(q => this._spawnDecoSlot(q, false));
     this._spawnDecoFloaters();
     return () => this.stopDeco();
+  }
+
+  _decoSmall() {
+    return window.innerWidth <= 640;
   }
 
   stopDeco() {
@@ -265,7 +268,13 @@ export class UI {
   }
 
   _spawnDecoFloaters() {
-    const floaterCount = Math.floor(Math.random() * (DECO_COUNT_MAX - DECO_COUNT_MIN + 1) + DECO_COUNT_MIN) - 4;
+    const small = this._decoSmall();
+    const baseCount = small ? 2 : 4;
+    const effMax = small ? 5 : DECO_COUNT_MAX;
+    const floaterCount = Math.max(
+      0,
+      Math.floor(Math.random() * (effMax - DECO_COUNT_MIN + 1) + DECO_COUNT_MIN) - baseCount
+    );
     for (let i = 0; i < floaterCount; i++) {
       this._spawnDecoSlot(null, true);
     }
