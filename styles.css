@@ -263,7 +263,17 @@ h2 { margin: 0 0 6px; font-size: clamp(1.5rem, 3.2vw, 2.1rem); }
   margin: 0 0 14px;
 }
 .hero-desc { font-size: 17px; line-height: 1.6; color: var(--muted); max-width: 440px; margin: 0 0 30px; }
-.hero-cta { font-size: 20px; padding: 18px 34px; animation: pkPulseRing 2.4s infinite; }
+.hero-cta { font-size: 20px; padding: 18px 34px; animation: pkPulseRing 2.4s infinite; display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
+.hero-cta:disabled { opacity: .7; cursor: default; animation: none; }
+.hero-cta-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid rgba(255, 255, 255, .4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: pkSpin .7s linear infinite;
+}
+@keyframes pkSpin { to { transform: rotate(360deg); } }
 .hero-facts { display: flex; gap: 22px; margin-top: 26px; color: var(--muted-2); font-size: 13px; font-weight: 700; flex-wrap: wrap; }
 
 .hero-visual { display: flex; justify-content: center; align-items: center; position: relative; animation: pkFadeUp .7s ease both .1s; }

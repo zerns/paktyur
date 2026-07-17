@@ -62,7 +62,10 @@
           <h1 class="hero-title">Paktyur<span class="brand-bang">!</span></h1>
           <p class="hero-sub">Smile, strike a pose &amp; make your own photo strip in minutes.</p>
           <p class="hero-desc">Choose a template, capture your moments hands-free, and download a personalized strip you'll actually want to share.</p>
-          <button id="hero-start-btn" type="button" class="primary hero-cta">📸&nbsp; Take a Picture Now</button>
+          <button id="hero-start-btn" type="button" class="primary hero-cta" disabled aria-busy="true">
+            <span class="hero-cta-spinner" aria-hidden="true"></span>
+            <span class="hero-cta-label">Loading…</span>
+          </button>
           <div class="hero-facts">
             <span>✌️ Hands-free capture</span><span>🎨 Fun templates</span><span>💾 Instant download</span>
           </div>

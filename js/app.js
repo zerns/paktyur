@@ -334,6 +334,10 @@ class App {
   _confirmDetection() {
     // Detection was already validated when the template was chosen/uploaded,
     // so reaching the preview guarantees a usable strip — just start.
+    // Unlock audio here: this runs inside the confirm-button gesture, so the
+    // WebAudio context can start even when capture is later triggered by
+    // voice/gesture (which carry no user gesture of their own).
+    this._ensureAudio();
     this._startSession();
   }
 
@@ -554,6 +558,7 @@ class App {
   async _triggerCapture() {
     if (this.capturing || this.state !== State.SESSION) return;
     this.capturing = true;
+    this._ensureAudio();
     this._setZoomIdle(false);
     this.voice?.disarm();
     this.gesture?.disarm();
@@ -623,6 +628,7 @@ class App {
       this.ui.stopProcessingCaptions();
       this._enter(State.OUTPUT);
       this.ui.burstConfetti();
+      this._congratsSound();
     } catch (err) {
       track('render_error', { reason: err.message });
       this.ui.stopProcessingCaptions();
@@ -679,12 +685,24 @@ class App {
     }
   }
 
+  // --- Audio unlock (must run inside a user gesture) -----------------------
+  _ensureAudio() {
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return null;
+      const ctx = (this._audioCtx ||= new Ctx());
+      if (ctx.state === 'suspended') ctx.resume();
+      return ctx;
+    } catch {
+      return null;
+    }
+  }
+
   // --- Shutter sound (WebAudio, no asset) ----------------------------------
   _shutterSound() {
     try {
-      const Ctx = window.AudioContext || window.webkitAudioContext;
-      if (!Ctx) return;
-      const ctx = (this._audioCtx ||= new Ctx());
+      const ctx = this._ensureAudio();
+      if (!ctx) return;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'square';
@@ -694,6 +712,33 @@ class App {
       osc.connect(gain).connect(ctx.destination);
       osc.start();
       osc.stop(ctx.currentTime + 0.12);
+    } catch {
+      /* audio is optional */
+    }
+  }
+
+  // --- Congrats sound (ascending arpeggio) ---------------------------------
+  _congratsSound() {
+    try {
+      const ctx = this._ensureAudio();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
+      const duration = 0.25;
+      const stagger = 0.08;
+
+      notes.forEach((freq, i) => {
+        const start = now + i * stagger;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, start);
+        gain.gain.setValueAtTime(0.12, start);
+        gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(start);
+        osc.stop(start + duration);
+      });
     } catch {
       /* audio is optional */
     }
@@ -724,6 +769,13 @@ function boot() {
   const footerYear = $('#footer-year');
   if (footerYear) footerYear.textContent = String(new Date().getFullYear());
   window.__app = new App();
+
+  const startBtn = $('#hero-start-btn');
+  if (startBtn) {
+    startBtn.disabled = false;
+    startBtn.removeAttribute('aria-busy');
+    startBtn.replaceChildren('📸  Take a Picture Now');
+  }
 }
 // Top-level await (dynamic imports above) can defer module execution past
 // DOMContentLoaded, so run immediately if the DOM is already parsed.
