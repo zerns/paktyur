@@ -1,4 +1,4 @@
-const CACHE_NAME = 'paktyur-cache-7c663f5';
+const CACHE_NAME = 'paktyur-cache-fa7e0d2';
 const PRECACHE_URLS = [
   '/',
   '/index.html',

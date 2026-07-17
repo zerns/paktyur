@@ -606,7 +606,7 @@ class App {
   async _finish() {
     this._teardownSession();
     this._enter(State.PROCESSING);
-    this._processingSound();
+    const soundDone = this._processingSound();
     this.ui.startProcessingCaptions();
     // Hold the screen visible for a minimum duration — compositing alone is
     // near-instant and would otherwise skip past "Great job!" unseen.
@@ -627,7 +627,7 @@ class App {
           : canvas;
         return exportPNG(out);
       })();
-      const [blob] = await Promise.all([work, minDelay]);
+      const [blob] = await Promise.all([work, minDelay, soundDone]);
       if (this.outputUrl) revokeObjectUrl(this.outputUrl);
       this.outputUrl = trackObjectUrl(URL.createObjectURL(blob));
       this.ui.setOutputImage(this.outputUrl);
@@ -741,6 +741,7 @@ class App {
       src.connect(ctx.destination);
       this._printingSource = src;
       src.start();
+      await new Promise((resolve) => { src.onended = resolve; });
     } catch {
       /* audio is optional */
     }
