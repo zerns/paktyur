@@ -25,6 +25,10 @@ python3 -m http.server 8000
 Camera/microphone need a **secure context**: `localhost` is fine; any other
 host must be **HTTPS**.
 
+This repo has a `scripts/stamp-versions.mjs` cache-busting stamper wired as a
+git pre-commit hook. Enable it once per clone:
+`git config core.hooksPath .githooks`.
+
 ---
 
 ## How placeholder detection works
@@ -83,8 +87,8 @@ The app picks the best available hands-free trigger, in order:
 2. **Gesture (✌️)** — MediaPipe Hand Landmarker (CDN). Detects a peace sign
    (index + middle extended; ring, pinky, thumb folded) held ~1 s, with a
    cooldown to prevent double-fires. Prompt: *Show a ✌️ hand sign*.
-3. **Manual** — a **Capture** button, used when neither of the above is
-   available.
+3. **Manual** — tap the **"👆 Manual"** trigger pill itself, which turns into
+   **"📸 Capture"** once active; used when neither of the above is available.
 
 After any trigger: a fullscreen **3 → 2 → 1 → CLICK!** countdown plays (with an
 optional WebAudio shutter tone), then one frame is captured and cover-cropped
@@ -130,6 +134,28 @@ yields to the event loop so large templates don't freeze the UI.
 
 ---
 
+## Caching & versioning
+
+Every `js/*.js` + `styles.css` reference carries a `?v=<hash>` that's a content
+hash of that file, so a browser (and the service worker) only refetches files
+that actually changed — untouched files stay cached.
+
+`scripts/stamp-versions.mjs` computes those hashes and rewrites every
+reference. It runs to a fixpoint: hashing a leaf module changes its importers'
+contents too, so the loop keeps re-stamping until changes have propagated all
+the way up to `index.html`. It also derives `sw.js`'s `CACHE_NAME` from the
+final `index.html` hash, so the service-worker cache turns over whenever
+anything changes.
+
+It runs automatically via `.githooks/pre-commit` (see **Running** above), or
+manually: `node scripts/stamp-versions.mjs`.
+
+`sw.js` serves HTML navigations **network-first** (so a freshly stamped
+`index.html` is seen immediately) and hashed JS/CSS **stale-while-revalidate**
+(safe, since a content change always produces a new `?v=` cache key).
+
+---
+
 ## Project structure
 
 ```
@@ -145,6 +171,10 @@ js/
   imageProcessor.js      decode, validate, cover-crop, composite, export
   ui.js                  screens, loupe, overlays, countdown, errors
   utils.js               validation, feature detection, cleanup helpers
+scripts/
+  stamp-versions.mjs     content-hash cache-buster (see Caching & versioning)
+.githooks/
+  pre-commit             runs stamp-versions.mjs before each commit
 ```
 
 ---
