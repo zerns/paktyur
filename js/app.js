@@ -24,6 +24,9 @@ import {
   COUNTDOWN_TICK_MS,
   PROCESSING_MIN_MS,
   OUTPUT_DISPLAY_WIDTH,
+  ZOOM_STEP,
+  ZOOM_PINCH_MIN,
+  ZOOM_PINCH_MAX,
 } from './config.js?v=bb46100c';
 import {
   features,
@@ -34,6 +37,7 @@ import {
   revokeObjectUrl,
   closeBitmap,
   createDisposerBag,
+  clamp,
   on,
   $,
 } from './utils.js?v=bb46100c';
@@ -98,6 +102,8 @@ class App {
     this.triggerMode = null; // 'voice' | 'gesture' | 'manual'
     this.builtInTemplate = false; // true for the four generated templates
     this.capturing = false;
+    this.zoomSupported = false;
+    this.zoomIdle = false; // true only while SESSION && !capturing
     this.workCanvas = this.workCanvas || createCanvas(1, 1);
 
     if (!initial) {
@@ -147,6 +153,11 @@ class App {
     // Session.
     this.bag.add(on(el.manualBtn, 'click', () => this._triggerCapture()));
     this.bag.add(on(el.cameraSelect, 'change', (e) => this._switchCamera(e.target.value)));
+    // Zoom controls (only interactive while idle — before the countdown).
+    this.bag.add(on(el.zoomInBtn, 'click', () => this._zoomStep(1)));
+    this.bag.add(on(el.zoomOutBtn, 'click', () => this._zoomStep(-1)));
+    this.bag.add(on(el.zoomResetBtn, 'click', () => this._zoomStep(0)));
+    this.bag.add(on(el.zoomSlider, 'input', (e) => this._applyZoom(Number(e.target.value))));
     // Trigger mode pills — let the user switch capture method live.
     for (const pill of el.triggerRow.children) {
       this.bag.add(on(pill, 'click', () => this._setTriggerMode(pill.dataset.trigger)));
@@ -340,6 +351,9 @@ class App {
     try {
       await this.camera.start();
       this.ui.setCameraStatus('ready', true);
+      this.zoomSupported = this.camera.zoomSupported;
+      this.ui.setZoomAvailability(this.zoomSupported);
+      if (this.zoomSupported) this.ui.setZoomValue(this.camera.zoomCurrent, this.camera.zoomCaps);
       const cams = await this.camera.listCameras();
       this.ui.populateCameras(cams, this.camera.deviceId);
     } catch (err) {
@@ -355,6 +369,49 @@ class App {
     // Draw guide overlay once the preview lays out.
     requestAnimationFrame(() => this._refreshOverlay());
     this._armCurrent();
+    this._setZoomIdle(true);
+  }
+
+  /**
+   * Single choke point for zoom interactivity. Zoom is usable only during an
+   * idle SESSION (before the countdown starts), so this is toggled off the
+   * instant capture begins and back on once the next shot is armed.
+   */
+  _setZoomIdle(idle) {
+    this.zoomIdle = idle && this.zoomSupported && this.state === State.SESSION;
+    this.ui.setZoomInteractive(this.zoomIdle);
+    this.gesture?.setZoomEnabled?.(this.zoomIdle);
+    this.voice?.setZoomEnabled?.(this.zoomIdle);
+  }
+
+  /** Apply an absolute zoom target and reflect it on the slider/label. */
+  async _applyZoom(target) {
+    if (!this.zoomIdle || !this.camera) return;
+    const applied = await this.camera.setZoom(target);
+    if (applied != null) this.ui.setZoomValue(applied, this.camera.zoomCaps);
+  }
+
+  /** Step zoom relative to the current value. dir: 1 in, -1 out, 0 reset. */
+  _zoomStep(dir) {
+    if (!this.camera?.zoomCaps) return;
+    const { min, max } = this.camera.zoomCaps;
+    if (dir === 0) { this._applyZoom(min); return; }
+    const delta = (max - min) * ZOOM_STEP * dir;
+    this._applyZoom((this.camera.zoomCurrent ?? min) + delta);
+  }
+
+  /** Map a raw gesture pinch span to an absolute zoom value. */
+  _onGestureZoom(span) {
+    if (!this.zoomIdle || !this.camera?.zoomCaps) return;
+    const { min, max } = this.camera.zoomCaps;
+    const t = clamp((span - ZOOM_PINCH_MIN) / (ZOOM_PINCH_MAX - ZOOM_PINCH_MIN), 0, 1);
+    this._applyZoom(min + t * (max - min));
+  }
+
+  /** Voice zoom command handler. dir: 'in' | 'out' | 'reset'. */
+  _onVoiceZoom(dir) {
+    if (dir === 'reset') this._zoomStep(0);
+    else this._zoomStep(dir === 'in' ? 1 : -1);
   }
 
   /** Which trigger modes are usable right now. */
@@ -419,7 +476,11 @@ class App {
     this.ui.setTriggerMode(mode);
 
     if (mode === 'voice') {
-      this.voice = new VoiceTrigger(() => this._triggerCapture(), (s) => this.ui.setTriggerStatus(s));
+      this.voice = new VoiceTrigger(
+        () => this._triggerCapture(),
+        (s) => this.ui.setTriggerStatus(s),
+        (dir) => this._onVoiceZoom(dir)
+      );
       try {
         this.voice.start();
         this.ui.setTriggerStatus(this._instructionFor('voice'));
@@ -431,7 +492,8 @@ class App {
       this.gesture = new GestureTrigger(
         this.ui.el.video,
         () => this._triggerCapture(),
-        (s) => this.ui.setTriggerStatus(s)
+        (s) => this.ui.setTriggerStatus(s),
+        (span) => this._onGestureZoom(span)
       );
       try {
         this.ui.setTriggerStatus('Loading gesture engine…');
@@ -445,6 +507,11 @@ class App {
     } else {
       this.ui.setTriggerStatus(this._instructionFor('manual'));
     }
+
+    // A live trigger-mode switch recreates voice/gesture — carry over the
+    // current zoom-idle state so zoom keeps working after the swap.
+    this.gesture?.setZoomEnabled?.(this.zoomIdle);
+    this.voice?.setZoomEnabled?.(this.zoomIdle);
   }
 
   /** Re-evaluate gesture availability when connectivity changes mid-session. */
@@ -486,6 +553,7 @@ class App {
   async _triggerCapture() {
     if (this.capturing || this.state !== State.SESSION) return;
     this.capturing = true;
+    this._setZoomIdle(false);
     this.voice?.disarm();
     this.gesture?.disarm();
 
@@ -500,6 +568,7 @@ class App {
       track('capture_error', { reason: err.message });
       this.ui.showToast(`Capture failed: ${err.message}`);
       this.capturing = false;
+      this._setZoomIdle(true);
       return;
     }
 
@@ -516,6 +585,7 @@ class App {
       this.ui.showStageReady(this._instructionFor(this.triggerMode));
       this._refreshOverlay();
       this._armCurrent();
+      this._setZoomIdle(true);
     } else {
       this._finish();
     }
@@ -598,6 +668,11 @@ class App {
     try {
       await this.camera.switchTo(deviceId);
       this._refreshOverlay();
+      // Zoom capability is per-device — recompute for the new camera.
+      this.zoomSupported = this.camera.zoomSupported;
+      this.ui.setZoomAvailability(this.zoomSupported);
+      if (this.zoomSupported) this.ui.setZoomValue(this.camera.zoomCurrent, this.camera.zoomCaps);
+      this._setZoomIdle(!this.capturing);
     } catch (err) {
       this.ui.showToast(err.message);
     }
@@ -633,6 +708,9 @@ class App {
     this._teardownTriggers();
     if (this.camera) { this.camera.stop(); this.camera = null; }
     this.capturing = false;
+    this.zoomSupported = false;
+    this.zoomIdle = false;
+    this.ui.setZoomAvailability(false);
   }
 }
 

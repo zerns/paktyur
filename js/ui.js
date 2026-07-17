@@ -88,6 +88,13 @@ export class UI {
       countdown: $('#countdown'),
       cameraFlash: $('#camera-flash'),
       stageReady: $('#stage-ready'),
+      zoomPanel: $('#zoom-panel'),
+      zoomOutBtn: $('#zoom-out-btn'),
+      zoomInBtn: $('#zoom-in-btn'),
+      zoomResetBtn: $('#zoom-reset-btn'),
+      zoomSlider: $('#zoom-slider'),
+      zoomValue: $('#zoom-value'),
+      zoomHint: $('#zoom-hint'),
       stripPreview: $('#strip-preview'),
       filledLabel: $('#filled-label'),
       // processing
@@ -440,6 +447,30 @@ export class UI {
       pill.disabled = !ok;
       pill.classList.toggle('unavailable', !ok);
     }
+  }
+
+  /** Show/hide the whole zoom control cluster based on camera capability. */
+  setZoomAvailability(supported) {
+    this.el.zoomPanel.hidden = !supported;
+  }
+
+  /** Enable/disable zoom controls — only interactive during idle SESSION. */
+  setZoomInteractive(interactive) {
+    this.el.zoomOutBtn.disabled = !interactive;
+    this.el.zoomInBtn.disabled = !interactive;
+    this.el.zoomResetBtn.disabled = !interactive;
+    this.el.zoomSlider.disabled = !interactive;
+    this.el.zoomPanel.classList.toggle('zoom-locked', !interactive);
+  }
+
+  /** Reflect current zoom value/range on the slider + label. */
+  setZoomValue(value, caps) {
+    const { min, max, step } = caps;
+    this.el.zoomSlider.min = String(min);
+    this.el.zoomSlider.max = String(max);
+    this.el.zoomSlider.step = String(step || 0.1);
+    this.el.zoomSlider.value = String(value);
+    this.el.zoomValue.textContent = `${value.toFixed(1)}×`;
   }
 
   setProgress(current, total) {

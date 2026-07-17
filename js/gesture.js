@@ -14,6 +14,7 @@ import {
   HAND_LANDMARKER_MODEL_URL,
   GESTURE_STABLE_MS,
   GESTURE_COOLDOWN_MS,
+  ZOOM_GESTURE_THROTTLE_MS,
 } from './config.js?v=bb46100c';
 import { isOnline } from './utils.js?v=bb46100c';
 
@@ -56,22 +57,38 @@ function isPeaceSign(lm) {
   return indexUp && middleUp && ringDown && pinkyDown && thumbFolded && separated;
 }
 
+/** Normalized thumb-tip to index-tip distance — a continuous pinch/spread span. */
+function pinchSpan(lm) {
+  const dx = lm[LM.THUMB_TIP].x - lm[LM.INDEX_TIP].x;
+  const dy = lm[LM.THUMB_TIP].y - lm[LM.INDEX_TIP].y;
+  return Math.hypot(dx, dy); // landmarks are normalized 0..1 coords
+}
+
 export class GestureTrigger {
   /**
    * @param {HTMLVideoElement} video
    * @param {() => void} onTrigger
    * @param {(status:string) => void} [onStatus]
+   * @param {(span:number) => void} [onZoom]  continuous pinch span (idle only)
    */
-  constructor(video, onTrigger, onStatus = () => {}) {
+  constructor(video, onTrigger, onStatus = () => {}, onZoom = () => {}) {
     this.video = video;
     this.onTrigger = onTrigger;
     this.onStatus = onStatus;
+    this.onZoom = onZoom;
     this.landmarker = null;
     this.running = false;
     this.armed = false;
+    this.zoomActive = false;
     this.rafId = null;
     this.stableSince = 0;
     this.lastFireAt = 0;
+    this._lastZoomEmit = 0;
+  }
+
+  /** Enable/disable continuous pinch-zoom reporting (idle-session only). */
+  setZoomEnabled(on) {
+    this.zoomActive = on;
   }
 
   static get available() {
@@ -126,32 +143,43 @@ export class GestureTrigger {
     if (!this.running) return;
     const now = performance.now();
 
-    if (this.armed && this.landmarker && this.video.readyState >= 2) {
-      let detected = false;
+    // MediaPipe requires strictly-increasing timestamps, so detect at most
+    // once per frame and share the single result between capture + zoom.
+    if ((this.armed || this.zoomActive) && this.landmarker && this.video.readyState >= 2) {
+      let result = null;
       try {
-        const result = this.landmarker.detectForVideo(this.video, now);
-        if (result.landmarks && result.landmarks.length === 1) {
-          detected = isPeaceSign(result.landmarks[0]);
-        }
+        result = this.landmarker.detectForVideo(this.video, now);
       } catch {
         /* transient detection error; keep looping */
       }
+      const lm = result?.landmarks?.length === 1 ? result.landmarks[0] : null;
 
-      if (detected) {
-        if (!this.stableSince) this.stableSince = now;
-        // Require the sign to be held, and respect cooldown.
-        if (
-          now - this.stableSince >= GESTURE_STABLE_MS &&
-          now - this.lastFireAt >= GESTURE_COOLDOWN_MS
-        ) {
-          this.lastFireAt = now;
-          this.armed = false;
+      // Capture trigger — held peace sign, only while armed.
+      if (this.armed) {
+        const detected = !!lm && isPeaceSign(lm);
+        if (detected) {
+          if (!this.stableSince) this.stableSince = now;
+          if (
+            now - this.stableSince >= GESTURE_STABLE_MS &&
+            now - this.lastFireAt >= GESTURE_COOLDOWN_MS
+          ) {
+            this.lastFireAt = now;
+            this.armed = false;
+            this.stableSince = 0;
+            this.onStatus('Gesture detected!');
+            this.onTrigger();
+          }
+        } else {
           this.stableSince = 0;
-          this.onStatus('Gesture detected!');
-          this.onTrigger();
         }
-      } else {
-        this.stableSince = 0;
+      }
+
+      // Continuous zoom — any single-hand pose that isn't the peace sign.
+      if (this.zoomActive && lm && !isPeaceSign(lm)) {
+        if (now - this._lastZoomEmit >= ZOOM_GESTURE_THROTTLE_MS) {
+          this._lastZoomEmit = now;
+          this.onZoom(pinchSpan(lm));
+        }
       }
     }
 
@@ -161,6 +189,8 @@ export class GestureTrigger {
   stop() {
     this.running = false;
     this.armed = false;
+    this.zoomActive = false;
+    this._lastZoomEmit = 0;
     if (this.rafId) cancelAnimationFrame(this.rafId);
     this.rafId = null;
     if (this.landmarker) {

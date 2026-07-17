@@ -626,6 +626,25 @@ button.ghost {
   transform: none;
 }
 
+.zoom-panel { margin: 12px 0 4px; }
+.zoom-panel[hidden] { display: none; }
+.zoom-controls { display: flex; align-items: center; gap: 8px; justify-content: center; }
+.zoom-btn {
+  width: 36px; height: 36px; border-radius: 999px;
+  border: 2px solid rgba(0, 0, 0, .08); background: #fff;
+  color: var(--muted); font-family: var(--font-display); font-weight: 700;
+  font-size: 18px; line-height: 1; cursor: pointer; transition: all .15s ease;
+}
+.zoom-btn:hover:not(:disabled) { border-color: var(--coral); color: var(--coral); transform: translateY(-1px); }
+.zoom-btn:disabled, .zoom-slider:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+.zoom-slider { flex: 1; max-width: 160px; accent-color: var(--coral); }
+.zoom-value {
+  min-width: 44px; text-align: right; font-family: var(--font-display);
+  font-weight: 700; color: var(--coral); font-variant-numeric: tabular-nums;
+}
+.zoom-hint { text-align: center; color: var(--muted-2); font-size: 12.5px; margin: 6px 0 0; }
+.zoom-panel.zoom-locked .zoom-hint { opacity: .45; }
+
 .mic-note { text-align: center; color: var(--faint); font-size: 12.5px; margin: 0 0 14px; min-height: 16px; }
 
 .trigger-card { text-align: center; padding: 18px 20px; }

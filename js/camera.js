@@ -12,10 +12,27 @@ export class Camera {
     this.video = videoEl;
     this.stream = null;
     this.deviceId = null;
+    this.zoomCaps = null; // {min,max,step} | null — MediaTrackCapabilities.zoom
+    this.zoomCurrent = 1;
   }
 
   get isActive() {
     return !!this.stream;
+  }
+
+  get zoomSupported() {
+    return !!this.zoomCaps;
+  }
+
+  /** Apply an absolute zoom value (clamped to capability range). */
+  async setZoom(value) {
+    if (!this.zoomSupported || !this.isActive) return null;
+    const { min, max } = this.zoomCaps;
+    const clamped = Math.min(max, Math.max(min, value));
+    const track = this.stream.getVideoTracks()[0];
+    await track.applyConstraints({ advanced: [{ zoom: clamped }] });
+    this.zoomCurrent = clamped;
+    return clamped;
   }
 
   /**
@@ -27,6 +44,7 @@ export class Camera {
       throw new Error('This browser does not support camera access (getUserMedia).');
     }
     this.stop();
+    this.zoomCaps = null;
 
     const constraints = {
       audio: false,
@@ -41,7 +59,13 @@ export class Camera {
       throw mapCameraError(err);
     }
 
-    this.deviceId = this.stream.getVideoTracks()[0]?.getSettings().deviceId ?? deviceId ?? null;
+    const track = this.stream.getVideoTracks()[0];
+    this.deviceId = track?.getSettings().deviceId ?? deviceId ?? null;
+    this.zoomCaps = track?.getCapabilities?.().zoom ?? null;
+    if (this.zoomCaps) {
+      const current = track.getSettings().zoom;
+      this.zoomCurrent = typeof current === 'number' ? current : this.zoomCaps.min;
+    }
     this.video.srcObject = this.stream;
     // Required for autoplay on iOS/Safari.
     this.video.setAttribute('playsinline', '');
@@ -72,6 +96,7 @@ export class Camera {
 
   /** Stop all tracks and release the stream. */
   stop() {
+    this.zoomCaps = null;
     if (this.stream) {
       this.stream.getTracks().forEach((t) => t.stop());
       this.stream = null;

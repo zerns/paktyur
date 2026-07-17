@@ -74,6 +74,17 @@ export const CAMERA_CONSTRAINTS = {
   },
 };
 
+// --- Zoom -------------------------------------------------------------------
+export const ZOOM_STEP = 0.2; // manual button / voice-command step (fraction of zoom range)
+export const ZOOM_PINCH_MIN = 0.03; // normalized thumb-index span mapped to min zoom
+export const ZOOM_PINCH_MAX = 0.35; // normalized thumb-index span mapped to max zoom
+export const ZOOM_GESTURE_THROTTLE_MS = 80; // min ms between gesture-driven zoom updates
+export const ZOOM_VOICE_KEYWORDS = {
+  in: ['zoom in'],
+  out: ['zoom out'],
+  reset: ['reset zoom', 'zoom reset'],
+};
+
 // --- Overlay colors (cycled per placeholder) --------------------------------
 export const OVERLAY_COLORS = [
   '#FF6B6B', '#6FE7DD', '#BFA2FF', '#FFD93D',

@@ -15,6 +15,7 @@ import {
   PROMPT_SOUND_URL,
   STT_LAG_MARGIN_MS,
   EXTRA_MATCH_WINDOW_MS,
+  ZOOM_VOICE_KEYWORDS,
 } from './config.js?v=bb46100c';
 import { features } from './utils.js?v=bb46100c';
 
@@ -39,9 +40,11 @@ export class VoiceTrigger {
    * @param {() => void} onTrigger  fired when a keyword is recognized
    * @param {(status:string) => void} [onStatus]  optional status updates
    */
-  constructor(onTrigger, onStatus = () => {}) {
+  constructor(onTrigger, onStatus = () => {}, onZoom = () => {}) {
     this.onTrigger = onTrigger;
     this.onStatus = onStatus;
+    this.onZoom = onZoom;
+    this.zoomActive = false; // recognize zoom commands only during idle session
     this.recognition = null;
     this.listening = false;
     this.retries = 0;
@@ -72,6 +75,20 @@ export class VoiceTrigger {
       if (this.suppressed) return;
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript.toLowerCase();
+        if (this.zoomActive) {
+          if (ZOOM_VOICE_KEYWORDS.reset.some((kw) => transcript.includes(kw))) {
+            this.onZoom('reset');
+            return;
+          }
+          if (ZOOM_VOICE_KEYWORDS.in.some((kw) => transcript.includes(kw))) {
+            this.onZoom('in');
+            return;
+          }
+          if (ZOOM_VOICE_KEYWORDS.out.some((kw) => transcript.includes(kw))) {
+            this.onZoom('out');
+            return;
+          }
+        }
         if (VOICE_KEYWORDS.some((kw) => transcript.includes(kw))) {
           if (this.armed) {
             this._resetSilence();
@@ -149,6 +166,11 @@ export class VoiceTrigger {
     this._clearPrompt();
   }
 
+  /** Enable/disable zoom voice commands (idle-session only). */
+  setZoomEnabled(on) {
+    this.zoomActive = on;
+  }
+
   /** Speak "Say cheese" once if the user stays silent after arming. */
   _startPrompt() {
     this._clearPrompt();
@@ -218,6 +240,7 @@ export class VoiceTrigger {
   stop() {
     this.listening = false;
     this.armed = false;
+    this.zoomActive = false;
     this.suppressed = false;
     this.extraMatchPending = false;
     this._clearPrompt();
