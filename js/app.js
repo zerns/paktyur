@@ -26,9 +26,8 @@ const {
   STAGE_LOADING_MIN_MS,
   OUTPUT_DISPLAY_WIDTH,
   ZOOM_STEP,
-  ZOOM_PINCH_MIN,
-  ZOOM_PINCH_MAX,
-} = await import('./config.js?v=a762155');
+  ZOOM_DRAG_SENSITIVITY,
+} = await import('./config.js?v=8befbba');
 const {
   features,
   isOnline,
@@ -38,10 +37,9 @@ const {
   revokeObjectUrl,
   closeBitmap,
   createDisposerBag,
-  clamp,
   on,
   $,
-} = await import('./utils.js?v=55065fc');
+} = await import('./utils.js?v=7a3c486');
 const {
   decode,
   validateDimensions,
@@ -51,13 +49,13 @@ const {
   exportPNG,
   createCanvas,
   downscaleCanvas,
-} = await import('./imageProcessor.js?v=a816397');
-const { detectPlaceholders } = await import('./placeholderDetector.js?v=cb5d915');
+} = await import('./imageProcessor.js?v=b14bb5b');
+const { detectPlaceholders } = await import('./placeholderDetector.js?v=8e51769');
 const { renderTemplate } = await import('./templates.js?v=ea8e10a');
-const { Camera } = await import('./camera.js?v=27ea3a6');
-const { VoiceTrigger, requestMicPermission } = await import('./microphone.js?v=c66a57a');
-const { GestureTrigger } = await import('./gesture.js?v=916a357');
-const { UI } = await import('./ui.js?v=0a7a2ee');
+const { Camera } = await import('./camera.js?v=d4990e6');
+const { VoiceTrigger, requestMicPermission } = await import('./microphone.js?v=0edf770');
+const { GestureTrigger } = await import('./gesture.js?v=4e21cb3');
+const { UI } = await import('./ui.js?v=29295ef');
 
 // GA4 may be blocked (adblock/offline) — gtag can be undefined.
 function track(name, params) {
@@ -418,12 +416,12 @@ class App {
     this._applyZoom((this.camera.zoomCurrent ?? min) + delta);
   }
 
-  /** Map a raw gesture pinch span to an absolute zoom value. */
-  _onGestureZoom(span) {
+  /** Apply a relative wrist-drag delta (fist gesture) to the current zoom. */
+  _onGestureZoom(dy) {
     if (!this.zoomIdle || !this.camera?.zoomCaps) return;
     const { min, max } = this.camera.zoomCaps;
-    const t = clamp((span - ZOOM_PINCH_MIN) / (ZOOM_PINCH_MAX - ZOOM_PINCH_MIN), 0, 1);
-    this._applyZoom(min + t * (max - min));
+    const delta = dy * ZOOM_DRAG_SENSITIVITY * (max - min);
+    this._applyZoom((this.camera.zoomCurrent ?? min) + delta);
   }
 
   /** Voice zoom command handler. dir: 'in' | 'out' | 'reset'. */

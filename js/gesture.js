@@ -15,8 +15,8 @@ const {
   GESTURE_STABLE_MS,
   GESTURE_COOLDOWN_MS,
   ZOOM_GESTURE_THROTTLE_MS,
-} = await import('./config.js?v=a762155');
-const { isOnline } = await import('./utils.js?v=55065fc');
+} = await import('./config.js?v=8befbba');
+const { isOnline } = await import('./utils.js?v=7a3c486');
 
 // MediaPipe hand landmark indices used for the peace-sign heuristic.
 const LM = {
@@ -57,11 +57,21 @@ function isPeaceSign(lm) {
   return indexUp && middleUp && ringDown && pinkyDown && thumbFolded && separated;
 }
 
-/** Normalized thumb-tip to index-tip distance — a continuous pinch/spread span. */
-function pinchSpan(lm) {
-  const dx = lm[LM.THUMB_TIP].x - lm[LM.INDEX_TIP].x;
-  const dy = lm[LM.THUMB_TIP].y - lm[LM.INDEX_TIP].y;
-  return Math.hypot(dx, dy); // landmarks are normalized 0..1 coords
+/**
+ * Classify a closed fist — all four fingers curled and the thumb folded
+ * across the palm (reuses the peace-sign thumb-fold heuristic).
+ */
+function isFist(lm) {
+  const indexDown = lm[LM.INDEX_TIP].y > lm[LM.INDEX_PIP].y;
+  const middleDown = lm[LM.MIDDLE_TIP].y > lm[LM.MIDDLE_PIP].y;
+  const ringDown = lm[LM.RING_TIP].y > lm[LM.RING_PIP].y;
+  const pinkyDown = lm[LM.PINKY_TIP].y > lm[LM.PINKY_PIP].y;
+
+  const thumbSpread = Math.abs(lm[LM.THUMB_TIP].x - lm[LM.INDEX_MCP].x);
+  const handWidth = Math.abs(lm[LM.INDEX_MCP].x - lm[LM.PINKY_PIP].x) || 0.0001;
+  const thumbFolded = thumbSpread < handWidth * 1.2;
+
+  return indexDown && middleDown && ringDown && pinkyDown && thumbFolded;
 }
 
 export class GestureTrigger {
@@ -69,7 +79,7 @@ export class GestureTrigger {
    * @param {HTMLVideoElement} video
    * @param {() => void} onTrigger
    * @param {(status:string) => void} [onStatus]
-   * @param {(span:number) => void} [onZoom]  continuous pinch span (idle only)
+   * @param {(dy:number) => void} [onZoom]  normalized vertical wrist delta while a fist is held (idle only)
    */
   constructor(video, onTrigger, onStatus = () => {}, onZoom = () => {}) {
     this.video = video;
@@ -84,9 +94,10 @@ export class GestureTrigger {
     this.stableSince = 0;
     this.lastFireAt = 0;
     this._lastZoomEmit = 0;
+    this._lastFistY = null;
   }
 
-  /** Enable/disable continuous pinch-zoom reporting (idle-session only). */
+  /** Enable/disable continuous fist-drag zoom reporting (idle-session only). */
   setZoomEnabled(on) {
     this.zoomActive = on;
   }
@@ -181,12 +192,19 @@ export class GestureTrigger {
         }
       }
 
-      // Continuous zoom — any single-hand pose that isn't the peace sign.
-      if (this.zoomActive && lm && !isPeaceSign(lm)) {
-        if (now - this._lastZoomEmit >= ZOOM_GESTURE_THROTTLE_MS) {
+      // Continuous zoom — fist held, moved vertically.
+      if (this.zoomActive && lm && isFist(lm)) {
+        const wristY = lm[LM.WRIST].y;
+        if (this._lastFistY == null) {
+          this._lastFistY = wristY;
+        } else if (now - this._lastZoomEmit >= ZOOM_GESTURE_THROTTLE_MS) {
           this._lastZoomEmit = now;
-          this.onZoom(pinchSpan(lm));
+          const dy = this._lastFistY - wristY; // moving up = positive = zoom in
+          this._lastFistY = wristY;
+          this.onZoom(dy);
         }
+      } else if (this.zoomActive) {
+        this._lastFistY = null;
       }
     }
 
@@ -198,6 +216,7 @@ export class GestureTrigger {
     this.armed = false;
     this.zoomActive = false;
     this._lastZoomEmit = 0;
+    this._lastFistY = null;
     if (this.rafId) cancelAnimationFrame(this.rafId);
     this.rafId = null;
     if (this.landmarker) {
