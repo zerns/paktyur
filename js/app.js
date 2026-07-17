@@ -610,6 +610,7 @@ class App {
   async _finish() {
     this._teardownSession();
     this._enter(State.PROCESSING);
+    this._processingSound();
     this.ui.startProcessingCaptions();
     // Hold the screen visible for a minimum duration — compositing alone is
     // near-instant and would otherwise skip past "Great job!" unseen.
@@ -721,6 +722,33 @@ class App {
       osc.connect(gain).connect(ctx.destination);
       osc.start();
       osc.stop(ctx.currentTime + 0.12);
+    } catch {
+      /* audio is optional */
+    }
+  }
+
+  // --- Processing sound (upward chirp) ------------------------------------
+  _processingSound() {
+    try {
+      const ctx = this._ensureAudio();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      const notes = [392.0, 523.25]; // G4, C5 — quick upward chirp
+      const duration = 0.15;
+      const stagger = 0.06;
+
+      notes.forEach((freq, i) => {
+        const start = now + i * stagger;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, start);
+        gain.gain.setValueAtTime(0.1, start);
+        gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(start);
+        osc.stop(start + duration);
+      });
     } catch {
       /* audio is optional */
     }
