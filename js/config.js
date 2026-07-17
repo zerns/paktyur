@@ -75,8 +75,6 @@ export const CAMERA_CONSTRAINTS = {
 };
 
 // --- Zoom -------------------------------------------------------------------
-export const ZOOM_STEP = 0.2; // manual button / voice-command step (fraction of zoom range)
-export const ZOOM_DRAG_SENSITIVITY = 6; // fist-drag: normalized wrist-y delta -> fraction of zoom range per frame
 export const ZOOM_GESTURE_THROTTLE_MS = 80; // min ms between gesture-driven zoom updates
 export const ZOOM_VOICE_KEYWORDS = {
   in: ['zoom in'],

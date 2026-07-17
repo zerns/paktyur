@@ -20,8 +20,8 @@ const {
   DECO_GAP_MS_MIN,
   DECO_GAP_MS_MAX,
   DECO_FADE_MS,
-} = await import('./config.js?v=8befbba');
-const { $, clamp } = await import('./utils.js?v=7a3c486');
+} = await import('./config.js?v=2462fe3');
+const { $, clamp } = await import('./utils.js?v=9550596');
 const { TEMPLATES, TEMPLATE_ORDER, paintCardPreview } = await import('./templates.js?v=ea8e10a');
 
 export const SCREENS = ['upload', 'jpgpick', 'confirm', 'session', 'processing', 'output'];
@@ -89,11 +89,8 @@ export class UI {
       stageReady: $('#stage-ready'),
       stageLoading: $('#stage-loading'),
       zoomPanel: $('#zoom-panel'),
-      zoomOutBtn: $('#zoom-out-btn'),
-      zoomInBtn: $('#zoom-in-btn'),
-      zoomResetBtn: $('#zoom-reset-btn'),
-      zoomSlider: $('#zoom-slider'),
-      zoomValue: $('#zoom-value'),
+      zoomHalfBtn: $('#zoom-half-btn'),
+      zoomFullBtn: $('#zoom-full-btn'),
       zoomHint: $('#zoom-hint'),
       stripPreview: $('#strip-preview'),
       filledLabel: $('#filled-label'),
@@ -459,21 +456,18 @@ export class UI {
 
   /** Enable/disable zoom controls — only interactive during idle SESSION. */
   setZoomInteractive(interactive) {
-    this.el.zoomOutBtn.disabled = !interactive;
-    this.el.zoomInBtn.disabled = !interactive;
-    this.el.zoomResetBtn.disabled = !interactive;
-    this.el.zoomSlider.disabled = !interactive;
+    this.el.zoomHalfBtn.disabled = !interactive;
+    this.el.zoomFullBtn.disabled = !interactive;
     this.el.zoomPanel.classList.toggle('zoom-locked', !interactive);
   }
 
-  /** Reflect current zoom value/range on the slider + label. */
-  setZoomValue(value, caps) {
-    const { min, max, step } = caps;
-    this.el.zoomSlider.min = String(min);
-    this.el.zoomSlider.max = String(max);
-    this.el.zoomSlider.step = String(step || 0.1);
-    this.el.zoomSlider.value = String(value);
-    this.el.zoomValue.textContent = `${value.toFixed(1)}×`;
+  /** Mark the active zoom level (0.5× vs 1×) by nearest match. */
+  setZoomValue(value) {
+    const half = value < 0.75;
+    this.el.zoomHalfBtn.classList.toggle('active', half);
+    this.el.zoomFullBtn.classList.toggle('active', !half);
+    this.el.zoomHalfBtn.setAttribute('aria-pressed', String(half));
+    this.el.zoomFullBtn.setAttribute('aria-pressed', String(!half));
   }
 
   setProgress(current, total) {

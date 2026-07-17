@@ -3,9 +3,9 @@
  * and still-frame capture. Wraps getUserMedia and cleans up tracks fully.
  */
 
-const { CAMERA_CONSTRAINTS } = await import('./config.js?v=8befbba');
-const { features } = await import('./utils.js?v=7a3c486');
-const { frameFromVideo } = await import('./imageProcessor.js?v=b14bb5b');
+const { CAMERA_CONSTRAINTS } = await import('./config.js?v=2462fe3');
+const { features } = await import('./utils.js?v=9550596');
+const { frameFromVideo } = await import('./imageProcessor.js?v=9b31e39');
 
 export class Camera {
   constructor(videoEl) {
@@ -22,6 +22,14 @@ export class Camera {
 
   get zoomSupported() {
     return !!this.zoomCaps;
+  }
+
+  /**
+   * True only when the device offers the ultrawide↔wide pair (0.5× and 1×).
+   * Zoom UI is gated on this — a device without 0.5× gains nothing from zoom.
+   */
+  get wideZoomSupported() {
+    return !!this.zoomCaps && this.zoomCaps.min <= 0.5 && this.zoomCaps.max >= 1;
   }
 
   /** Apply an absolute zoom value (clamped to capability range). */

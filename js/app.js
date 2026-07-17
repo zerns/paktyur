@@ -25,9 +25,7 @@ const {
   PROCESSING_MIN_MS,
   STAGE_LOADING_MIN_MS,
   OUTPUT_DISPLAY_WIDTH,
-  ZOOM_STEP,
-  ZOOM_DRAG_SENSITIVITY,
-} = await import('./config.js?v=8befbba');
+} = await import('./config.js?v=2462fe3');
 const {
   features,
   isOnline,
@@ -39,7 +37,7 @@ const {
   createDisposerBag,
   on,
   $,
-} = await import('./utils.js?v=7a3c486');
+} = await import('./utils.js?v=9550596');
 const {
   decode,
   validateDimensions,
@@ -49,13 +47,13 @@ const {
   exportPNG,
   createCanvas,
   downscaleCanvas,
-} = await import('./imageProcessor.js?v=b14bb5b');
-const { detectPlaceholders } = await import('./placeholderDetector.js?v=8e51769');
+} = await import('./imageProcessor.js?v=9b31e39');
+const { detectPlaceholders } = await import('./placeholderDetector.js?v=55ad146');
 const { renderTemplate } = await import('./templates.js?v=ea8e10a');
-const { Camera } = await import('./camera.js?v=d4990e6');
-const { VoiceTrigger, requestMicPermission } = await import('./microphone.js?v=0edf770');
-const { GestureTrigger } = await import('./gesture.js?v=4e21cb3');
-const { UI } = await import('./ui.js?v=29295ef');
+const { Camera } = await import('./camera.js?v=58c112b');
+const { VoiceTrigger, requestMicPermission } = await import('./microphone.js?v=81a17fd');
+const { GestureTrigger } = await import('./gesture.js?v=1df3f54');
+const { UI } = await import('./ui.js?v=e8872ae');
 
 // GA4 may be blocked (adblock/offline) — gtag can be undefined.
 function track(name, params) {
@@ -152,10 +150,8 @@ class App {
     // Session.
     this.bag.add(on(el.cameraSelect, 'change', (e) => this._switchCamera(e.target.value)));
     // Zoom controls (only interactive while idle — before the countdown).
-    this.bag.add(on(el.zoomInBtn, 'click', () => this._zoomStep(1)));
-    this.bag.add(on(el.zoomOutBtn, 'click', () => this._zoomStep(-1)));
-    this.bag.add(on(el.zoomResetBtn, 'click', () => this._zoomStep(0)));
-    this.bag.add(on(el.zoomSlider, 'input', (e) => this._applyZoom(Number(e.target.value))));
+    this.bag.add(on(el.zoomHalfBtn, 'click', () => this._setZoomLevel(0.5)));
+    this.bag.add(on(el.zoomFullBtn, 'click', () => this._setZoomLevel(1)));
     // Trigger mode pills — let the user switch capture method live.
     for (const pill of el.triggerRow.children) {
       this.bag.add(on(pill, 'click', () => {
@@ -361,9 +357,9 @@ class App {
     try {
       await this.camera.start();
       this.ui.setCameraStatus('ready', true);
-      this.zoomSupported = this.camera.zoomSupported;
+      this.zoomSupported = this.camera.wideZoomSupported;
       this.ui.setZoomAvailability(this.zoomSupported);
-      if (this.zoomSupported) this.ui.setZoomValue(this.camera.zoomCurrent, this.camera.zoomCaps);
+      if (this.zoomSupported) this.ui.setZoomValue(this.camera.zoomCurrent);
       const cams = await this.camera.listCameras();
       this.ui.populateCameras(cams, this.camera.deviceId);
     } catch (err) {
@@ -400,34 +396,28 @@ class App {
     this.voice?.setZoomEnabled?.(this.zoomIdle);
   }
 
-  /** Apply an absolute zoom target and reflect it on the slider/label. */
+  /** Apply an absolute zoom target and mark the active level. */
   async _applyZoom(target) {
     if (!this.zoomIdle || !this.camera) return;
     const applied = await this.camera.setZoom(target);
-    if (applied != null) this.ui.setZoomValue(applied, this.camera.zoomCaps);
+    if (applied != null) this.ui.setZoomValue(applied);
   }
 
-  /** Step zoom relative to the current value. dir: 1 in, -1 out, 0 reset. */
-  _zoomStep(dir) {
+  /** Set one of the two discrete zoom levels (0.5× or 1×). */
+  _setZoomLevel(level) {
     if (!this.camera?.zoomCaps) return;
-    const { min, max } = this.camera.zoomCaps;
-    if (dir === 0) { this._applyZoom(min); return; }
-    const delta = (max - min) * ZOOM_STEP * dir;
-    this._applyZoom((this.camera.zoomCurrent ?? min) + delta);
+    this._applyZoom(level);
   }
 
-  /** Apply a relative wrist-drag delta (fist gesture) to the current zoom. */
+  /** Fist-drag zoom: collapse the wrist-y delta to the nearest level. */
   _onGestureZoom(dy) {
-    if (!this.zoomIdle || !this.camera?.zoomCaps) return;
-    const { min, max } = this.camera.zoomCaps;
-    const delta = dy * ZOOM_DRAG_SENSITIVITY * (max - min);
-    this._applyZoom((this.camera.zoomCurrent ?? min) + delta);
+    if (!this.zoomIdle) return;
+    this._setZoomLevel(dy > 0 ? 1 : 0.5);
   }
 
   /** Voice zoom command handler. dir: 'in' | 'out' | 'reset'. */
   _onVoiceZoom(dir) {
-    if (dir === 'reset') this._zoomStep(0);
-    else this._zoomStep(dir === 'in' ? 1 : -1);
+    this._setZoomLevel(dir === 'in' ? 1 : 0.5);
   }
 
   /** Which trigger modes are usable right now. */
@@ -687,9 +677,9 @@ class App {
       await this.camera.switchTo(deviceId);
       this._refreshOverlay();
       // Zoom capability is per-device — recompute for the new camera.
-      this.zoomSupported = this.camera.zoomSupported;
+      this.zoomSupported = this.camera.wideZoomSupported;
       this.ui.setZoomAvailability(this.zoomSupported);
-      if (this.zoomSupported) this.ui.setZoomValue(this.camera.zoomCurrent, this.camera.zoomCaps);
+      if (this.zoomSupported) this.ui.setZoomValue(this.camera.zoomCurrent);
       this._setZoomIdle(!this.capturing);
     } catch (err) {
       this.ui.showToast(err.message);

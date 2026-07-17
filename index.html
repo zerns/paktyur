@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=ff27c71" />
+  <link rel="stylesheet" href="styles.css?v=383826a" />
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -170,17 +170,13 @@
           </div>
 
           <div id="zoom-panel" class="zoom-panel" hidden>
-            <div class="zoom-controls">
-              <button id="zoom-out-btn" type="button" class="zoom-btn" aria-label="Zoom out">−</button>
-              <input id="zoom-slider" type="range" class="zoom-slider" aria-label="Zoom level" />
-              <button id="zoom-in-btn" type="button" class="zoom-btn" aria-label="Zoom in">+</button>
-              <button id="zoom-reset-btn" type="button" class="zoom-btn zoom-reset" aria-label="Reset zoom">⟲</button>
-              <span id="zoom-value" class="zoom-value">1.0×</span>
+            <div class="zoom-controls" role="group" aria-label="Zoom level">
+              <button id="zoom-half-btn" type="button" class="zoom-btn" aria-pressed="false">0.5×</button>
+              <button id="zoom-full-btn" type="button" class="zoom-btn active" aria-pressed="true">1×</button>
             </div>
             <p id="zoom-hint" class="zoom-hint">
-              Zoom with the buttons/slider, make a fist ✊ and move your hand up/down
-              (gesture mode), or say “zoom in / zoom out / reset zoom” (voice mode) —
-              only before the countdown.
+              Tap 0.5× / 1×, make a fist ✊ and move your hand up/down (gesture mode),
+              or say “zoom in / zoom out” (voice mode) — only before the countdown.
             </p>
           </div>
 
@@ -262,7 +258,7 @@
   <!-- Cache-bust version — content-hashed per file by scripts/stamp-versions.mjs
        (run automatically via the pre-commit hook). Each ?v= changes only when the
        referenced file's contents change, so only changed files refetch. -->
-  <script type="module" src="js/app.js?v=9656aa1"></script>
+  <script type="module" src="js/app.js?v=a63c5f4"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
