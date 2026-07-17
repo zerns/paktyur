@@ -894,4 +894,10 @@ button.ghost {
   .brand-word { font-size: 18px; }
   .stepper { gap: 2px; padding: 5px 8px; }
   .step-label { display: none; }
+
+  .template-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .template-card { max-width: none; padding: 10px 8px 12px; }
+  .template-card-preview { max-width: 100px; }
+  .dropzone { padding: 28px 16px; }
+  .dropzone-icon { font-size: 30px; margin-bottom: 6px; }
 }

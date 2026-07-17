@@ -16,7 +16,8 @@ if (window.top !== window.self) {
   }
 }
 
-import {
+const V = new URL(import.meta.url).search; // "?v=<hash>" — single source, propagated to all module imports
+const {
   MIN_PHOTOS,
   MAX_PHOTOS,
   DEFAULT_COLOR_TOLERANCE,
@@ -27,8 +28,8 @@ import {
   ZOOM_STEP,
   ZOOM_PINCH_MIN,
   ZOOM_PINCH_MAX,
-} from './config.js?v=bb46100c';
-import {
+} = await import('./config.js' + V);
+const {
   features,
   isOnline,
   validateTemplateFile,
@@ -40,8 +41,8 @@ import {
   clamp,
   on,
   $,
-} from './utils.js?v=bb46100c';
-import {
+} = await import('./utils.js' + V);
+const {
   decode,
   validateDimensions,
   toImageData,
@@ -50,13 +51,13 @@ import {
   exportPNG,
   createCanvas,
   downscaleCanvas,
-} from './imageProcessor.js?v=bb46100c';
-import { detectPlaceholders } from './placeholderDetector.js?v=bb46100c';
-import { renderTemplate } from './templates.js?v=bb46100c';
-import { Camera } from './camera.js?v=bb46100c';
-import { VoiceTrigger, requestMicPermission } from './microphone.js?v=bb46100c';
-import { GestureTrigger } from './gesture.js?v=bb46100c';
-import { UI } from './ui.js?v=bb46100c';
+} = await import('./imageProcessor.js' + V);
+const { detectPlaceholders } = await import('./placeholderDetector.js' + V);
+const { renderTemplate } = await import('./templates.js' + V);
+const { Camera } = await import('./camera.js' + V);
+const { VoiceTrigger, requestMicPermission } = await import('./microphone.js' + V);
+const { GestureTrigger } = await import('./gesture.js' + V);
+const { UI } = await import('./ui.js' + V);
 
 // GA4 may be blocked (adblock/offline) — gtag can be undefined.
 function track(name, params) {
@@ -719,8 +720,15 @@ if (!features.getUserMedia) {
   // Still boot; camera errors surface later with a clear message.
   console.warn('getUserMedia not detected; camera features may be unavailable.');
 }
-window.addEventListener('DOMContentLoaded', () => {
+function boot() {
   const footerYear = $('#footer-year');
   if (footerYear) footerYear.textContent = String(new Date().getFullYear());
   window.__app = new App();
-});
+}
+// Top-level await (dynamic imports above) can defer module execution past
+// DOMContentLoaded, so run immediately if the DOM is already parsed.
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', boot);
+} else {
+  boot();
+}

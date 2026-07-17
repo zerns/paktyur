@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob: https://static.cloudflareinsights.com https://cdn.jsdelivr.net https://www.googletagmanager.com 'sha256-CP5HvVz2cE/DNuevbX49UxQGugw3jrcn8j36LF5yRsM='; connect-src 'self' https://cloudflareinsights.com https://cdn.jsdelivr.net https://storage.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' blob: data:; media-src 'self' blob:; object-src 'none'; base-uri 'none';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob: https://static.cloudflareinsights.com https://cdn.jsdelivr.net https://www.googletagmanager.com 'sha256-CP5HvVz2cE/DNuevbX49UxQGugw3jrcn8j36LF5yRsM=' 'sha256-r33xe24WAqC48TFORwJIG/La8NDwq3Xvc8Kn8q/fR/A='; connect-src 'self' https://cloudflareinsights.com https://cdn.jsdelivr.net https://storage.googleapis.com https://www.googletagmanager.com https://www.google-analytics.com; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' blob: data:; media-src 'self' blob:; object-src 'none'; base-uri 'none';">
   <title>Paktyur! — Photo Booth</title>
   <meta name="description" content="Create your own photo booth strip in minutes. Capture hands-free with fun templates and download instantly to share.">
   <link rel="canonical" href="https://paktyur.projectkilaw.com/">
@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=662fc6bd" />
+  <link rel="stylesheet" href="styles.css?v=20260717b" />
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -252,7 +252,9 @@
     <small>&copy; <span id="footer-year">2026</span> Project Kilaw</small>
   </footer>
 
-  <script type="module" src="js/app.js?v=05a4ee53"></script>
+  <!-- Cache-bust version — SINGLE SOURCE. Bump this ?v= to invalidate all JS modules;
+       every module inherits it via import.meta.url propagation. -->
+  <script type="module" src="js/app.js?v=20260717b"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

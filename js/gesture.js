@@ -8,15 +8,16 @@
  * a manual capture button.
  */
 
-import {
+const V = new URL(import.meta.url).search;
+const {
   MEDIAPIPE_VISION_URL,
   MEDIAPIPE_WASM_ROOT,
   HAND_LANDMARKER_MODEL_URL,
   GESTURE_STABLE_MS,
   GESTURE_COOLDOWN_MS,
   ZOOM_GESTURE_THROTTLE_MS,
-} from './config.js?v=bb46100c';
-import { isOnline } from './utils.js?v=bb46100c';
+} = await import('./config.js' + V);
+const { isOnline } = await import('./utils.js' + V);
 
 // MediaPipe hand landmark indices used for the peace-sign heuristic.
 const LM = {
@@ -112,11 +113,18 @@ export class GestureTrigger {
     }
     const { HandLandmarker, FilesetResolver } = vision;
     const fileset = await FilesetResolver.forVisionTasks(MEDIAPIPE_WASM_ROOT);
-    this.landmarker = await HandLandmarker.createFromOptions(fileset, {
-      baseOptions: { modelAssetPath: HAND_LANDMARKER_MODEL_URL, delegate: 'GPU' },
+    const opts = (delegate) => ({
+      baseOptions: { modelAssetPath: HAND_LANDMARKER_MODEL_URL, delegate },
       numHands: 1,
       runningMode: 'VIDEO',
     });
+    try {
+      // GPU is fastest but fails on devices/browsers without a usable WebGL
+      // context (e.g. emscripten_webgl_create_context error). Fall back to CPU.
+      this.landmarker = await HandLandmarker.createFromOptions(fileset, opts('GPU'));
+    } catch {
+      this.landmarker = await HandLandmarker.createFromOptions(fileset, opts('CPU'));
+    }
   }
 
   /** Start the detection loop (loads the model on first call). */

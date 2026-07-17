@@ -7,7 +7,8 @@
  * holds no application state itself.
  */
 
-import {
+const V = new URL(import.meta.url).search;
+const {
   OVERLAY_COLORS,
   MAX_COLOR_TOLERANCE,
   PROCESSING_MESSAGES,
@@ -20,9 +21,9 @@ import {
   DECO_GAP_MS_MIN,
   DECO_GAP_MS_MAX,
   DECO_FADE_MS,
-} from './config.js?v=bb46100c';
-import { $, clamp } from './utils.js?v=bb46100c';
-import { TEMPLATES, TEMPLATE_ORDER, paintCardPreview } from './templates.js?v=bb46100c';
+} = await import('./config.js' + V);
+const { $, clamp } = await import('./utils.js' + V);
+const { TEMPLATES, TEMPLATE_ORDER, paintCardPreview } = await import('./templates.js' + V);
 
 export const SCREENS = ['upload', 'jpgpick', 'confirm', 'session', 'processing', 'output'];
 const ALL_SCREENS = ['welcome', ...SCREENS];
