@@ -238,13 +238,14 @@
     <small>&copy; <span id="footer-year">2026</span> Project Kilaw</small>
   </footer>
 
-  <script type="module" src="js/app.js?v=662fc6bd"></script>
+  <script type="module" src="js/app.js?v=05a4ee53"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js').catch(console.error);
       });
     }
+    window.addEventListener('appinstalled', () => window.gtag?.('event', 'pwa_install'));
   </script>
 </body>
 </html>

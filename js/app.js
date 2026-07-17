@@ -54,6 +54,11 @@ import { VoiceTrigger, requestMicPermission } from './microphone.js?v=bb46100c';
 import { GestureTrigger } from './gesture.js?v=bb46100c';
 import { UI } from './ui.js?v=bb46100c';
 
+// GA4 may be blocked (adblock/offline) — gtag can be undefined.
+function track(name, params) {
+  window.gtag?.('event', name, params);
+}
+
 const State = {
   WELCOME: 'welcome',
   UPLOAD: 'upload',
@@ -107,7 +112,10 @@ class App {
     this.bag.add(on($('#brand-btn'), 'click', () => this._enter(State.WELCOME, { reset: true })));
 
     // Welcome.
-    this.bag.add(on(el.heroStartBtn, 'click', () => this._enter(State.UPLOAD)));
+    this.bag.add(on(el.heroStartBtn, 'click', () => {
+      track('session_start');
+      this._enter(State.UPLOAD);
+    }));
 
     // Template chooser (built-in cards) + upload.
     this.ui.renderTemplateCards((id) => this._selectDefaultTemplate(id));
@@ -179,6 +187,7 @@ class App {
       this.mode = mode;
       this.builtInTemplate = false;
       this.ui.setSelectedTemplate('custom');
+      track('template_select', { template_type: 'custom' });
 
       if (mode === 'png') {
         // Wait until detection resolves before announcing success — an
@@ -191,8 +200,10 @@ class App {
         this._enter(State.JPGPICK);
         this._setupJpgPick();
         this.ui.showToast('Template uploaded! ✨');
+        track('jpg_color_pick');
       }
     } catch (err) {
+      track('template_upload_error', { reason: err.message });
       this.ui.showToast(err.message);
     }
   }
@@ -208,8 +219,10 @@ class App {
       this.mode = 'png'; // transparent slots — same composite path as an uploaded PNG
       this.pickedColor = null;
       this.detection = { total: placeholders.length, valid: placeholders, rejected: [] };
+      track('template_select', { template_type: 'built_in', template_id: id });
       this._showConfirm();
     } catch (err) {
+      track('template_upload_error', { reason: err.message });
       this.ui.showToast(err.message);
     }
   }
@@ -223,6 +236,7 @@ class App {
       this.ui.showToast('Template uploaded! ✨');
       this._showConfirm();
     } catch (err) {
+      track('template_upload_error', { reason: err.message });
       this.ui.showToast(`Detection failed: ${err.message}`);
     }
   }
@@ -236,10 +250,12 @@ class App {
   _reportEmptyDetection() {
     const n = this.detection.valid.length;
     if (n < MIN_PHOTOS) {
+      track('photo_areas_rejected', { reason: 'none_found' });
       this.ui.showToast('No photo areas found — use a template with transparent (PNG) or solid-color (JPG) holes.', { persistent: true });
       return true;
     }
     if (n > MAX_PHOTOS) {
+      track('photo_areas_rejected', { reason: 'too_many', count: n });
       this.ui.showToast(`Too many photo areas (${n}). Maximum is ${MAX_PHOTOS}.`, { persistent: true });
       return true;
     }
@@ -290,6 +306,7 @@ class App {
       if (this._reportEmptyDetection()) return;
       this._showConfirm();
     } catch (err) {
+      track('template_upload_error', { reason: err.message });
       this.ui.showToast(`Detection failed: ${err.message}`);
     }
   }
@@ -357,6 +374,7 @@ class App {
     this._micOk = micOk;
     this.ui.setTriggerHint('');
     const avail = this._availability();
+    track('trigger_mode_available', { voice: avail.voice, gesture: avail.gesture });
     this.ui.setTriggerAvailability(avail);
 
     if (micOk && VoiceTrigger.supported) {
@@ -477,7 +495,9 @@ class App {
       });
       const frame = await this.camera.capture();
       this.photos[this.activeIndex] = frame;
+      track('photo_capture', { capture_method: this.triggerMode });
     } catch (err) {
+      track('capture_error', { reason: err.message });
       this.ui.showToast(`Capture failed: ${err.message}`);
       this.capturing = false;
       return;
@@ -533,6 +553,7 @@ class App {
       this._enter(State.OUTPUT);
       this.ui.burstConfetti();
     } catch (err) {
+      track('render_error', { reason: err.message });
       this.ui.stopProcessingCaptions();
       this.ui.showToast(`Rendering failed: ${err.message}`);
     }
@@ -545,6 +566,7 @@ class App {
     } catch {
       /* clipboard optional */
     }
+    track('share_link_copy');
     this.ui.showToast('Link copied! Share the fun! 🎉');
   }
 
@@ -556,6 +578,7 @@ class App {
     document.body.appendChild(a);
     a.click();
     a.remove();
+    track('photo_download');
   }
 
   // === Step 12: Reuse same template ========================================
@@ -565,6 +588,7 @@ class App {
     this.photos = new Array(this.detection.valid.length).fill(null);
     this.activeIndex = 0;
     if (this.outputUrl) { revokeObjectUrl(this.outputUrl); this.outputUrl = null; }
+    track('retake_same_template');
     this._startSession();
   }
 
