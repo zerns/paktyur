@@ -630,6 +630,7 @@ button.ghost {
 .zoom-panel[hidden] { display: none; }
 .zoom-controls { display: flex; align-items: center; gap: 8px; justify-content: center; }
 .zoom-btn {
+  display: flex; align-items: center; justify-content: center;
   width: 36px; height: 36px; border-radius: 999px;
   border: 2px solid rgba(0, 0, 0, .08); background: #fff;
   color: var(--muted); font-family: var(--font-display); font-weight: 700;
