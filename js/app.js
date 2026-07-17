@@ -146,7 +146,6 @@ class App {
 
     // Output.
     this.bag.add(on(el.downloadBtn, 'click', () => this._download()));
-    this.bag.add(on(el.printBtn, 'click', () => window.print()));
     this.bag.add(on(el.againBtn, 'click', () => this._retakeSameTemplate()));
     this.bag.add(on(el.newTemplateBtn, 'click', () => this._enter(State.UPLOAD, { reset: true })));
     this.bag.add(on(el.copyLinkBtn, 'click', () => this._copyLink()));

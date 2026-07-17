@@ -876,11 +876,3 @@ button.ghost {
   .stepper { gap: 2px; padding: 5px 8px; }
   .step-label { display: none; }
 }
-
-/* --- Print --------------------------------------------------------------------------------- */
-@media print {
-  .no-print, .app-header, .app-footer, #deco-layer, .toast { display: none !important; }
-  body { background: #fff; }
-  .output-image { max-width: 100%; }
-  .app-main { width: 100%; padding: 0; }
-}

@@ -96,7 +96,6 @@ export class UI {
       // output
       outputImg: $('#output-image'),
       downloadBtn: $('#download-btn'),
-      printBtn: $('#print-btn'),
       againBtn: $('#again-btn'),
       newTemplateBtn: $('#new-template-btn'),
       copyLinkBtn: $('#copy-link-btn'),
