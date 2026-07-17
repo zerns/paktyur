@@ -85,7 +85,6 @@ export class UI {
       triggerHint: $('#trigger-hint'),
       progress: $('#photo-progress'),
       cameraSelect: $('#camera-select'),
-      manualBtn: $('#manual-capture-btn'),
       countdown: $('#countdown'),
       cameraFlash: $('#camera-flash'),
       stageReady: $('#stage-ready'),
@@ -435,6 +434,9 @@ export class UI {
     if (meta) this.el.triggerIcon.textContent = meta.icon;
     for (const pill of this.el.triggerRow.children) {
       pill.classList.toggle('active', pill.dataset.trigger === mode);
+      if (pill.dataset.trigger === 'manual') {
+        pill.textContent = mode === 'manual' ? '📸 Capture' : '👆 Manual';
+      }
     }
   }
 
@@ -477,10 +479,6 @@ export class UI {
 
   setProgress(current, total) {
     this.el.progress.textContent = `Photo ${current} of ${total}`;
-  }
-
-  showManualButton(show) {
-    this.el.manualBtn.hidden = !show;
   }
 
   populateCameras(cameras, activeId) {

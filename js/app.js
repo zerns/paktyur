@@ -153,7 +153,6 @@ class App {
     this.bag.add(on(el.recolorBtn, 'click', () => this._enter(State.JPGPICK)));
 
     // Session.
-    this.bag.add(on(el.manualBtn, 'click', () => this._triggerCapture()));
     this.bag.add(on(el.cameraSelect, 'change', (e) => this._switchCamera(e.target.value)));
     // Zoom controls (only interactive while idle — before the countdown).
     this.bag.add(on(el.zoomInBtn, 'click', () => this._zoomStep(1)));
@@ -162,7 +161,13 @@ class App {
     this.bag.add(on(el.zoomSlider, 'input', (e) => this._applyZoom(Number(e.target.value))));
     // Trigger mode pills — let the user switch capture method live.
     for (const pill of el.triggerRow.children) {
-      this.bag.add(on(pill, 'click', () => this._setTriggerMode(pill.dataset.trigger)));
+      this.bag.add(on(pill, 'click', () => {
+        if (pill.dataset.trigger === 'manual' && this.triggerMode === 'manual') {
+          this._triggerCapture();
+        } else {
+          this._setTriggerMode(pill.dataset.trigger);
+        }
+      }));
     }
 
     // Output.
@@ -485,7 +490,6 @@ class App {
   /** Tear down the current trigger and start `mode`. */
   async _startTrigger(mode) {
     this._teardownTriggers();
-    this.ui.showManualButton(mode === 'manual');
     this.triggerMode = mode;
     this.ui.setTriggerMode(mode);
 
