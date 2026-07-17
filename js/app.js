@@ -25,7 +25,8 @@ const {
   PROCESSING_MIN_MS,
   STAGE_LOADING_MIN_MS,
   OUTPUT_DISPLAY_WIDTH,
-} = await import('./config.js?v=2462fe3');
+  PRINTING_SOUND_URL,
+} = await import('./config.js?v=67fd3f1');
 const {
   features,
   isOnline,
@@ -37,7 +38,7 @@ const {
   createDisposerBag,
   on,
   $,
-} = await import('./utils.js?v=9550596');
+} = await import('./utils.js?v=d659b1b');
 const {
   decode,
   validateDimensions,
@@ -47,13 +48,13 @@ const {
   exportPNG,
   createCanvas,
   downscaleCanvas,
-} = await import('./imageProcessor.js?v=9b31e39');
-const { detectPlaceholders } = await import('./placeholderDetector.js?v=55ad146');
+} = await import('./imageProcessor.js?v=d157c69');
+const { detectPlaceholders } = await import('./placeholderDetector.js?v=aeaf404');
 const { renderTemplate } = await import('./templates.js?v=ea8e10a');
-const { Camera } = await import('./camera.js?v=58c112b');
-const { VoiceTrigger, requestMicPermission } = await import('./microphone.js?v=81a17fd');
-const { GestureTrigger } = await import('./gesture.js?v=1df3f54');
-const { UI } = await import('./ui.js?v=e8872ae');
+const { Camera } = await import('./camera.js?v=89af3e7');
+const { VoiceTrigger, requestMicPermission } = await import('./microphone.js?v=6170dd8');
+const { GestureTrigger } = await import('./gesture.js?v=53fcfc8');
+const { UI } = await import('./ui.js?v=aabceb2');
 
 // GA4 may be blocked (adblock/offline) — gtag can be undefined.
 function track(name, params) {
@@ -183,7 +184,11 @@ class App {
     if (state === State.UPLOAD) this.ui.setSelectedTemplate(null);
     if (state !== State.SESSION) this._teardownSession();
     if (state !== State.OUTPUT) this.ui.stopConfetti();
-    if (state !== State.PROCESSING) this.ui.stopProcessingCaptions();
+    if (state !== State.PROCESSING) {
+      this.ui.stopProcessingCaptions();
+      try { this._printingSource?.stop(); } catch { /* already stopped */ }
+      this._printingSource = null;
+    }
   }
 
   // === Step 1-2: Upload + validate =========================================
@@ -718,28 +723,24 @@ class App {
     }
   }
 
-  // --- Processing sound (upward chirp) ------------------------------------
-  _processingSound() {
+  // --- Processing sound (recorded printing cue) ---------------------------
+  // Fetch + decode once, then reuse the buffer. Plain <audio> stays silent in
+  // this app (see microphone.js), so route through WebAudio like every other
+  // cue. Source is tracked so _enter() can cut it when leaving PROCESSING.
+  async _processingSound() {
     try {
       const ctx = this._ensureAudio();
       if (!ctx) return;
-      const now = ctx.currentTime;
-      const notes = [392.0, 523.25]; // G4, C5 — quick upward chirp
-      const duration = 0.15;
-      const stagger = 0.06;
-
-      notes.forEach((freq, i) => {
-        const start = now + i * stagger;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, start);
-        gain.gain.setValueAtTime(0.1, start);
-        gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
-        osc.connect(gain).connect(ctx.destination);
-        osc.start(start);
-        osc.stop(start + duration);
-      });
+      if (!this._printingBuffer) {
+        const res = await fetch(PRINTING_SOUND_URL);
+        const data = await res.arrayBuffer();
+        this._printingBuffer = await ctx.decodeAudioData(data);
+      }
+      const src = ctx.createBufferSource();
+      src.buffer = this._printingBuffer;
+      src.connect(ctx.destination);
+      this._printingSource = src;
+      src.start();
     } catch {
       /* audio is optional */
     }

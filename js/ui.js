@@ -20,8 +20,8 @@ const {
   DECO_GAP_MS_MIN,
   DECO_GAP_MS_MAX,
   DECO_FADE_MS,
-} = await import('./config.js?v=2462fe3');
-const { $, clamp } = await import('./utils.js?v=9550596');
+} = await import('./config.js?v=67fd3f1');
+const { $, clamp } = await import('./utils.js?v=d659b1b');
 const { TEMPLATES, TEMPLATE_ORDER, paintCardPreview } = await import('./templates.js?v=ea8e10a');
 
 export const SCREENS = ['upload', 'jpgpick', 'confirm', 'session', 'processing', 'output'];

@@ -16,8 +16,8 @@ const {
   STT_LAG_MARGIN_MS,
   EXTRA_MATCH_WINDOW_MS,
   ZOOM_VOICE_KEYWORDS,
-} = await import('./config.js?v=2462fe3');
-const { features } = await import('./utils.js?v=9550596');
+} = await import('./config.js?v=67fd3f1');
+const { features } = await import('./utils.js?v=d659b1b');
 
 /**
  * Request microphone permission. Returns true if granted.

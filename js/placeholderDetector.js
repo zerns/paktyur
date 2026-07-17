@@ -18,8 +18,8 @@ const {
   MAX_PLACEHOLDER_WIDTH,
   MAX_PLACEHOLDER_HEIGHT,
   MAX_PLACEHOLDER_AREA,
-} = await import('./config.js?v=2462fe3');
-const { nextFrame } = await import('./utils.js?v=9550596');
+} = await import('./config.js?v=67fd3f1');
+const { nextFrame } = await import('./utils.js?v=d659b1b');
 
 /**
  * Build a boolean mask (Uint8Array, 1 = candidate pixel) from ImageData.

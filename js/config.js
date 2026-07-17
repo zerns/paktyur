@@ -45,6 +45,7 @@ export const VOICE_TIMEOUT_MS = 15000; // restart recognition if silent this lon
 export const VOICE_MAX_RETRIES = 5;
 export const VOICE_PROMPT_DELAY_MS = 1000; // speak "Say cheese" if countdown hasn't begun
 export const PROMPT_SOUND_URL = 'assets/say-cheese.mp3'; // recorded voice cue
+export const PRINTING_SOUND_URL = 'assets/printing.mp3'; // recorded printing cue
 export const STT_LAG_MARGIN_MS = 1800; // ignore recognition results this long after the cue ends (cloud STT round-trip lag)
 export const EXTRA_MATCH_WINDOW_MS = 6000; // how long a stray duplicate "cheese" is remembered
 
