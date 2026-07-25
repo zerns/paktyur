@@ -24,9 +24,8 @@ const {
   COUNTDOWN_TICK_MS,
   PROCESSING_MIN_MS,
   STAGE_LOADING_MIN_MS,
-  OUTPUT_DISPLAY_WIDTH,
   PRINTING_SOUND_URL,
-} = await import('./config.js?v=67fd3f1');
+} = await import('./config.js?v=2b8c6cd');
 const {
   features,
   isOnline,
@@ -38,7 +37,7 @@ const {
   createDisposerBag,
   on,
   $,
-} = await import('./utils.js?v=d659b1b');
+} = await import('./utils.js?v=ef23a8e');
 const {
   decode,
   validateDimensions,
@@ -47,14 +46,13 @@ const {
   composite,
   exportPNG,
   createCanvas,
-  downscaleCanvas,
-} = await import('./imageProcessor.js?v=d157c69');
-const { detectPlaceholders } = await import('./placeholderDetector.js?v=aeaf404');
-const { renderTemplate } = await import('./templates.js?v=ea8e10a');
-const { Camera } = await import('./camera.js?v=89af3e7');
-const { VoiceTrigger, requestMicPermission } = await import('./microphone.js?v=6170dd8');
-const { GestureTrigger } = await import('./gesture.js?v=53fcfc8');
-const { UI } = await import('./ui.js?v=2f204e5');
+} = await import('./imageProcessor.js?v=69ffa89');
+const { detectPlaceholders } = await import('./placeholderDetector.js?v=b7ffc1b');
+const { renderTemplate } = await import('./templates.js?v=76eae3d');
+const { Camera } = await import('./camera.js?v=b611d23');
+const { VoiceTrigger, requestMicPermission } = await import('./microphone.js?v=87054fe');
+const { GestureTrigger } = await import('./gesture.js?v=e2222ab');
+const { UI } = await import('./ui.js?v=2d783bc');
 
 // GA4 may be blocked (adblock/offline) — gtag can be undefined.
 function track(name, params) {
@@ -620,12 +618,9 @@ class App {
           this.photos,
           this.workCanvas
         );
-        // Built-in templates export at the display width so the downloaded
-        // file matches the strip shown on screen.
-        const out = this.builtInTemplate
-          ? downscaleCanvas(canvas, OUTPUT_DISPLAY_WIDTH)
-          : canvas;
-        return exportPNG(out);
+        // Built-in templates are already rendered at OUTPUT_LONG_EDGE, and
+        // uploaded templates export at full resolution — no downscale.
+        return exportPNG(canvas);
       })();
       const [blob] = await Promise.all([work, minDelay, soundDone]);
       if (this.outputUrl) revokeObjectUrl(this.outputUrl);

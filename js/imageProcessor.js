@@ -4,8 +4,8 @@
  * createImageBitmap where available, and reuses canvases to limit copies.
  */
 
-const { MAX_WIDTH, MAX_HEIGHT } = await import('./config.js?v=67fd3f1');
-const { features, closeBitmap, trackObjectUrl } = await import('./utils.js?v=d659b1b');
+const { MAX_WIDTH, MAX_HEIGHT } = await import('./config.js?v=2b8c6cd');
+const { features, closeBitmap, trackObjectUrl } = await import('./utils.js?v=ef23a8e');
 
 /** Create a 2D drawing surface, preferring OffscreenCanvas. */
 export function createCanvas(width, height) {
@@ -126,19 +126,6 @@ export function composite(template, mode, placeholders, photos, canvas) {
     ctx.drawImage(template, 0, 0, width, height);
     drawPhotos();
   }
-  return out;
-}
-
-/**
- * Downscale a canvas to `targetW` wide, preserving aspect ratio. Returns the
- * source unchanged if it's already at or below the target width.
- * @returns {HTMLCanvasElement|OffscreenCanvas}
- */
-export function downscaleCanvas(src, targetW) {
-  if (src.width <= targetW) return src;
-  const h = Math.round(src.height * (targetW / src.width));
-  const out = createCanvas(targetW, h);
-  out.getContext('2d').drawImage(src, 0, 0, targetW, h);
   return out;
 }
 

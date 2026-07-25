@@ -8,10 +8,11 @@
 export const MAX_WIDTH = 4000;
 export const MAX_HEIGHT = 4000;
 
-// Built-in templates export at the on-screen display width so the downloaded
-// file matches the strip shown in the UI (#confirm-canvas / .output-image are
-// capped at 220px in styles.css).
-export const OUTPUT_DISPLAY_WIDTH = 220;
+// Built-in templates render (and export) so the strip's longer side lands on
+// this many pixels — high enough for a crisp download / print. On-screen size
+// is a separate CSS concern (#confirm-canvas / .output-image capped at 220px in
+// styles.css); the browser scales the preview down, the saved file stays full.
+export const OUTPUT_LONG_EDGE = 2048;
 
 // Reject empty / absurd files early.
 export const MAX_FILE_BYTES = 30 * 1024 * 1024; // 30 MB
@@ -70,8 +71,8 @@ export const CAMERA_CONSTRAINTS = {
   audio: false,
   video: {
     facingMode: 'user',
-    width: { ideal: 1280 },
-    height: { ideal: 720 },
+    width: { ideal: 1920 },
+    height: { ideal: 1080 },
   },
 };
 

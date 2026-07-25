@@ -15,8 +15,8 @@ const {
   GESTURE_STABLE_MS,
   GESTURE_COOLDOWN_MS,
   ZOOM_GESTURE_THROTTLE_MS,
-} = await import('./config.js?v=67fd3f1');
-const { isOnline } = await import('./utils.js?v=d659b1b');
+} = await import('./config.js?v=2b8c6cd');
+const { isOnline } = await import('./utils.js?v=ef23a8e');
 
 // MediaPipe hand landmark indices used for the peace-sign heuristic.
 const LM = {

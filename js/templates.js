@@ -10,6 +10,8 @@
  * live strip, and the exported PNG all match.
  */
 
+import { OUTPUT_LONG_EDGE } from './config.js';
+
 // --- Slot layout helpers (percentages of the inner panel) -------------------
 function vSlots(n) {
   const pad = 6, gap = 4, side = 9;
@@ -107,9 +109,13 @@ function paintFrame(ctx, tpl, W, geom) {
  * Render a template to a real ImageBitmap with transparent photo slots.
  * @returns {Promise<{bitmap: ImageBitmap, size: {width, height}, placeholders: Array}>}
  */
-export async function renderTemplate(id, W = 900) {
+export async function renderTemplate(id, longEdge = OUTPUT_LONG_EDGE) {
   const tpl = typeof id === 'string' ? TEMPLATES[id] : id;
   if (!tpl) throw new Error(`Unknown template: ${id}`);
+  // Pick a render width so the strip's longer side lands on `longEdge`.
+  // geometry() is linear in W, so derive the aspect from a probe width first.
+  const probe = geometry(tpl, 900);
+  const W = Math.round(longEdge * (900 / Math.max(900, probe.H)));
   const geom = geometry(tpl, W);
   const placeholders = slotRects(tpl, geom);
 
