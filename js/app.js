@@ -25,7 +25,7 @@ const {
   PROCESSING_MIN_MS,
   STAGE_LOADING_MIN_MS,
   PRINTING_SOUND_URL,
-} = await import('./config.js?v=ef39300');
+} = await import('./config.js?v=d48d5fc');
 const {
   features,
   isOnline,
@@ -37,7 +37,7 @@ const {
   createDisposerBag,
   on,
   $,
-} = await import('./utils.js?v=aec4ec6');
+} = await import('./utils.js?v=7225e7c');
 const {
   decode,
   validateDimensions,
@@ -46,13 +46,13 @@ const {
   composite,
   exportPNG,
   createCanvas,
-} = await import('./imageProcessor.js?v=529c82a');
-const { detectPlaceholders } = await import('./placeholderDetector.js?v=3510048');
+} = await import('./imageProcessor.js?v=82bd7c4');
+const { detectPlaceholders } = await import('./placeholderDetector.js?v=1c74779');
 const { renderTemplate } = await import('./templates.js?v=76eae3d');
-const { Camera } = await import('./camera.js?v=63ce916');
-const { VoiceTrigger, requestMicPermission } = await import('./microphone.js?v=c3fd356');
-const { GestureTrigger } = await import('./gesture.js?v=5fabdb3');
-const { UI } = await import('./ui.js?v=d99fc7e');
+const { Camera } = await import('./camera.js?v=02981c9');
+const { VoiceTrigger, requestMicPermission } = await import('./microphone.js?v=75897a3');
+const { GestureTrigger } = await import('./gesture.js?v=e2f4425');
+const { UI } = await import('./ui.js?v=be2aa9f');
 
 // GA4 may be blocked (adblock/offline) — gtag can be undefined.
 function track(name, params) {
@@ -440,7 +440,7 @@ class App {
     const next = isOnline() ? 'gesture' : 'manual';
     this._startTrigger(next).then(() => {
       this.ui.setTriggerStatus(
-        `Voice needs Safari on iOS — switched to ${next === 'gesture' ? 'gesture' : 'tap'}.`
+        `Voice unavailable on this browser — switched to ${next === 'gesture' ? 'gesture' : 'tap'}.`
       );
       this._armCurrent();
     });

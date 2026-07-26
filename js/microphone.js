@@ -11,13 +11,15 @@ const {
   VOICE_KEYWORDS,
   VOICE_TIMEOUT_MS,
   VOICE_MAX_RETRIES,
+  VOICE_HEALTHY_SESSION_MS,
+  VOICE_RESTART_BACKOFF_MS,
   VOICE_PROMPT_DELAY_MS,
   PROMPT_SOUND_URL,
   STT_LAG_MARGIN_MS,
   EXTRA_MATCH_WINDOW_MS,
   ZOOM_VOICE_KEYWORDS,
-} = await import('./config.js?v=ef39300');
-const { features } = await import('./utils.js?v=aec4ec6');
+} = await import('./config.js?v=d48d5fc');
+const { features } = await import('./utils.js?v=7225e7c');
 
 /**
  * Request microphone permission. Returns true if granted.
@@ -40,9 +42,10 @@ export class VoiceTrigger {
    * @param {() => void} onTrigger  fired when a keyword is recognized
    * @param {(status:string) => void} [onStatus]  optional status updates
    * @param {(dir:string) => void} [onZoom]  zoom voice command handler
-   * @param {() => void} [onUnavailable]  fired when the speech service rejects
-   *   the mic (e.g. iOS Chrome, which lacks Apple's speech entitlement) so the
-   *   app can fall back to another trigger instead of a dead voice pill
+   * @param {() => void} [onUnavailable]  fired when recognition is unusable —
+   *   the speech service rejected the mic, or it kept ending instantly without
+   *   ever delivering a result (iOS Chrome, which lacks Apple's speech
+   *   entitlement) — so the app can fall back instead of a dead voice pill
    */
   constructor(onTrigger, onStatus = () => {}, onZoom = () => {}, onUnavailable = () => {}) {
     this.onTrigger = onTrigger;
@@ -55,6 +58,9 @@ export class VoiceTrigger {
     this.retries = 0;
     this.silenceTimer = null;
     this.promptTimer = null;
+    this.restartTimer = null;
+    this.sessionStartedAt = 0; // when the current recognition session began
+    this.sawResult = false; // did the current session deliver any result?
     this.suppressed = false; // true while the cue itself is playing — ignore results
     this.firedAt = 0; // timestamp of the match that started the current capture
     this.extraMatchPending = false; // a stray duplicate "cheese" was heard mid-capture
@@ -77,14 +83,18 @@ export class VoiceTrigger {
     rec.lang = 'en-US';
 
     rec.onstart = () => {
-      // A successful (re)start proves recognition isn't in a hard-failure loop.
-      // Reset the retry budget so normal continuous-mode onend cycling (silence,
-      // no-speech, periodic STT restarts) never exhausts VOICE_MAX_RETRIES and
-      // leaves the mic dead before the user says "Cheese".
-      this.retries = 0;
+      // Starting successfully proves nothing on its own — iOS Chrome starts and
+      // then ends immediately, forever. Only a session that produces a result or
+      // stays up a while counts as healthy (see onend).
+      this.sessionStartedAt = Date.now();
+      this.sawResult = false;
     };
 
     rec.onresult = (event) => {
+      // Any result at all proves recognition works — clear the failure budget
+      // even when the result is suppressed or doesn't match a keyword.
+      this.sawResult = true;
+      this.retries = 0;
       if (this.suppressed) return;
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript.toLowerCase();
@@ -132,15 +142,36 @@ export class VoiceTrigger {
     };
 
     rec.onend = () => {
-      // Auto-restart while we still intend to listen.
-      if (this.listening && this.retries < VOICE_MAX_RETRIES) {
-        this.retries++;
+      if (!this.listening) return;
+
+      // A session is healthy if it produced a result or stayed up long enough
+      // (normal continuous-mode cycling: silence, no-speech, periodic STT
+      // restarts). Anything shorter with nothing to show is a failed start —
+      // that's the iOS Chrome case, where recognition ends instantly forever.
+      const lasted = Date.now() - this.sessionStartedAt;
+      if (this.sawResult || lasted >= VOICE_HEALTHY_SESSION_MS) this.retries = 0;
+      else this.retries++;
+
+      if (this.retries >= VOICE_MAX_RETRIES) {
+        // Recognition is stuck in a start/end storm and will never fire. Bail
+        // out so the app can fall back instead of thrashing the mic forever.
+        this.onStatus('Voice recognition unavailable on this browser.');
+        this.stop();
+        this.onUnavailable();
+        return;
+      }
+
+      // Auto-restart with a small backoff so a failing engine can't busy-loop.
+      if (this.restartTimer) clearTimeout(this.restartTimer);
+      this.restartTimer = setTimeout(() => {
+        this.restartTimer = null;
+        if (!this.listening) return;
         try {
           rec.start();
         } catch {
           /* start() throws if already starting; ignore */
         }
-      }
+      }, VOICE_RESTART_BACKOFF_MS);
     };
 
     this.recognition = rec;
@@ -260,6 +291,8 @@ export class VoiceTrigger {
     this._clearPrompt();
     if (this.silenceTimer) clearTimeout(this.silenceTimer);
     this.silenceTimer = null;
+    if (this.restartTimer) clearTimeout(this.restartTimer);
+    this.restartTimer = null;
     if (this.recognition) {
       this.recognition.onend = null;
       this.recognition.onstart = null;

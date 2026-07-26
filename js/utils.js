@@ -3,7 +3,7 @@
  * resource cleanup registry, debounce, and generic DOM utilities.
  */
 
-const { MAX_FILE_BYTES } = await import('./config.js?v=ef39300');
+const { MAX_FILE_BYTES } = await import('./config.js?v=d48d5fc');
 
 // --- Feature detection ------------------------------------------------------
 export const features = {

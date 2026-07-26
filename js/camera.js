@@ -3,9 +3,9 @@
  * and still-frame capture. Wraps getUserMedia and cleans up tracks fully.
  */
 
-const { CAMERA_CONSTRAINTS } = await import('./config.js?v=ef39300');
-const { features } = await import('./utils.js?v=aec4ec6');
-const { frameFromVideo } = await import('./imageProcessor.js?v=529c82a');
+const { CAMERA_CONSTRAINTS } = await import('./config.js?v=d48d5fc');
+const { features } = await import('./utils.js?v=7225e7c');
+const { frameFromVideo } = await import('./imageProcessor.js?v=82bd7c4');
 
 export class Camera {
   constructor(videoEl) {
