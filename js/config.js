@@ -43,7 +43,12 @@ export const MAX_COLOR_TOLERANCE = 120;
 // --- Voice trigger ----------------------------------------------------------
 export const VOICE_KEYWORDS = ['cheese', 'cheeze', 'cheers'];
 export const VOICE_TIMEOUT_MS = 15000; // restart recognition if silent this long
-export const VOICE_MAX_RETRIES = 5;
+// Restart storm guard: if recognition restarts more than VOICE_MAX_RESTARTS
+// times within VOICE_RESTART_WINDOW_MS it's a broken loop (e.g. iOS WebKit
+// re-prompting for the mic on every start) — stop and fall back to another
+// trigger instead of prompting endlessly.
+export const VOICE_MAX_RESTARTS = 6;
+export const VOICE_RESTART_WINDOW_MS = 10000;
 export const VOICE_PROMPT_DELAY_MS = 1000; // speak "Say cheese" if countdown hasn't begun
 export const PROMPT_SOUND_URL = 'assets/say-cheese.mp3'; // recorded voice cue
 export const PRINTING_SOUND_URL = 'assets/printing.mp3'; // recorded printing cue
