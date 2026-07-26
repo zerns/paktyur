@@ -80,6 +80,16 @@ export class Camera {
       }
     }
     this.hasAudio = this.stream.getAudioTracks().length > 0;
+    if (isIOS && this.hasAudio) {
+      // iOS allows only one active capture — a live audio track here blocks
+      // SpeechRecognition's own internal capture (it errors "not-allowed").
+      // The permission grant persists for the page session, so stop and drop
+      // the track to free the slot; hasAudio keeps recording the grant.
+      this.stream.getAudioTracks().forEach((t) => {
+        t.stop();
+        this.stream.removeTrack(t);
+      });
+    }
 
     const track = this.stream.getVideoTracks()[0];
     this.deviceId = track?.getSettings().deviceId ?? deviceId ?? null;

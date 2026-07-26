@@ -49,7 +49,7 @@ const {
 } = await import('./imageProcessor.js?v=ef64d50');
 const { detectPlaceholders } = await import('./placeholderDetector.js?v=8d48a67');
 const { renderTemplate } = await import('./templates.js?v=76eae3d');
-const { Camera } = await import('./camera.js?v=77a0b3f');
+const { Camera } = await import('./camera.js?v=b1d471d');
 const { VoiceTrigger, requestMicPermission } = await import('./microphone.js?v=e06c256');
 const { GestureTrigger } = await import('./gesture.js?v=ac2c322');
 const { UI } = await import('./ui.js?v=ed00f08');
