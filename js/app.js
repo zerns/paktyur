@@ -25,7 +25,7 @@ const {
   PROCESSING_MIN_MS,
   STAGE_LOADING_MIN_MS,
   PRINTING_SOUND_URL,
-} = await import('./config.js?v=1b8ad94');
+} = await import('./config.js?v=ef39300');
 const {
   features,
   isOnline,
@@ -37,7 +37,7 @@ const {
   createDisposerBag,
   on,
   $,
-} = await import('./utils.js?v=00870b9');
+} = await import('./utils.js?v=aec4ec6');
 const {
   decode,
   validateDimensions,
@@ -46,13 +46,13 @@ const {
   composite,
   exportPNG,
   createCanvas,
-} = await import('./imageProcessor.js?v=ef64d50');
-const { detectPlaceholders } = await import('./placeholderDetector.js?v=8d48a67');
+} = await import('./imageProcessor.js?v=529c82a');
+const { detectPlaceholders } = await import('./placeholderDetector.js?v=3510048');
 const { renderTemplate } = await import('./templates.js?v=76eae3d');
-const { Camera } = await import('./camera.js?v=b1d471d');
-const { VoiceTrigger, requestMicPermission } = await import('./microphone.js?v=e06c256');
-const { GestureTrigger } = await import('./gesture.js?v=ac2c322');
-const { UI } = await import('./ui.js?v=ed00f08');
+const { Camera } = await import('./camera.js?v=63ce916');
+const { VoiceTrigger, requestMicPermission } = await import('./microphone.js?v=97e8f18');
+const { GestureTrigger } = await import('./gesture.js?v=5fabdb3');
+const { UI } = await import('./ui.js?v=d99fc7e');
 
 // GA4 may be blocked (adblock/offline) — gtag can be undefined.
 function track(name, params) {
@@ -96,7 +96,6 @@ class App {
     this.activeIndex = 0;
     this.outputUrl = null;
     this.triggerMode = null; // 'voice' | 'gesture' | 'manual'
-    this._voiceBroken = false; // set when voice recognition gives up (iOS storm)
     this.builtInTemplate = false; // true for the four generated templates
     this.capturing = false;
     this.zoomSupported = false;
@@ -348,7 +347,6 @@ class App {
   async _startSession() {
     this.photos = new Array(this.detection.valid.length).fill(null);
     this.activeIndex = 0;
-    this._voiceBroken = false; // give voice a fresh chance each session
     this._enter(State.SESSION);
     this.ui.setProgress(1, this.detection.valid.length);
 
@@ -377,7 +375,7 @@ class App {
     // Request mic (optional) and pick a trigger mode. On iOS the camera stream
     // already carries the audio grant (combined getUserMedia — a second
     // audio-only request there gets rejected even after Allow), so skip it.
-    const micOk = this.camera.hasAudio || (await requestMicPermission());
+    const micOk = await requestMicPermission();
     await this._chooseTriggerMode(micOk);
 
     // Draw guide overlay once the preview lays out.
@@ -427,28 +425,10 @@ class App {
     this._setZoomLevel(dir === 'in' ? 1 : 0.5);
   }
 
-  /**
-   * Voice recognition gave up (restart storm — typically iOS WebKit re-prompting
-   * for the mic on every start). Mark voice unusable and fall back to the next
-   * available trigger so the user isn't stuck with an endless permission prompt.
-   */
-  _onVoiceUnavailable() {
-    if (this.state !== State.SESSION || this.triggerMode !== 'voice') return;
-    this._voiceBroken = true;
-    this.ui.setTriggerAvailability(this._availability());
-    const next = isOnline() ? 'gesture' : 'manual';
-    this._startTrigger(next).then(() => {
-      this.ui.setTriggerStatus(
-        `Voice not supported on this device — switched to ${next === 'gesture' ? 'gesture' : 'tap'}.`
-      );
-      this._armCurrent();
-    });
-  }
-
   /** Which trigger modes are usable right now. */
   _availability() {
     return {
-      voice: !!(this._micOk && VoiceTrigger.supported && !this._voiceBroken),
+      voice: !!(this._micOk && VoiceTrigger.supported),
       gesture: isOnline(),
       manual: true,
     };
@@ -509,8 +489,7 @@ class App {
       this.voice = new VoiceTrigger(
         () => this._triggerCapture(),
         (s) => this.ui.setTriggerStatus(s),
-        (dir) => this._onVoiceZoom(dir),
-        () => this._onVoiceUnavailable()
+        (dir) => this._onVoiceZoom(dir)
       );
       try {
         this.voice.start();

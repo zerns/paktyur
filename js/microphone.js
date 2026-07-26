@@ -10,15 +10,14 @@
 const {
   VOICE_KEYWORDS,
   VOICE_TIMEOUT_MS,
-  VOICE_MAX_RESTARTS,
-  VOICE_RESTART_WINDOW_MS,
+  VOICE_MAX_RETRIES,
   VOICE_PROMPT_DELAY_MS,
   PROMPT_SOUND_URL,
   STT_LAG_MARGIN_MS,
   EXTRA_MATCH_WINDOW_MS,
   ZOOM_VOICE_KEYWORDS,
-} = await import('./config.js?v=1b8ad94');
-const { features, isIOS } = await import('./utils.js?v=00870b9');
+} = await import('./config.js?v=ef39300');
+const { features } = await import('./utils.js?v=aec4ec6');
 
 /**
  * Request microphone permission. Returns true if granted.
@@ -40,19 +39,15 @@ export class VoiceTrigger {
   /**
    * @param {() => void} onTrigger  fired when a keyword is recognized
    * @param {(status:string) => void} [onStatus]  optional status updates
-   * @param {(dir:string) => void} [onZoom]  zoom voice command handler
-   * @param {() => void} [onUnavailable]  fired when recognition can't stay alive
-   *   (e.g. a restart storm) so the app can fall back to another trigger
    */
-  constructor(onTrigger, onStatus = () => {}, onZoom = () => {}, onUnavailable = () => {}) {
+  constructor(onTrigger, onStatus = () => {}, onZoom = () => {}) {
     this.onTrigger = onTrigger;
     this.onStatus = onStatus;
     this.onZoom = onZoom;
-    this.onUnavailable = onUnavailable;
     this.zoomActive = false; // recognize zoom commands only during idle session
     this.recognition = null;
     this.listening = false;
-    this.restartTimes = []; // timestamps of recent auto-restarts (storm guard)
+    this.retries = 0;
     this.silenceTimer = null;
     this.promptTimer = null;
     this.suppressed = false; // true while the cue itself is playing — ignore results
@@ -72,12 +67,17 @@ export class VoiceTrigger {
 
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     const rec = new SR();
-    // iOS WebKit effectively ignores continuous mode and streams flaky interim
-    // results; final-only one-shot sessions (kept alive by the bounded restart
-    // loop below) are the supported model there.
-    rec.continuous = !isIOS;
-    rec.interimResults = !isIOS;
+    rec.continuous = true;
+    rec.interimResults = true;
     rec.lang = 'en-US';
+
+    rec.onstart = () => {
+      // A successful (re)start proves recognition isn't in a hard-failure loop.
+      // Reset the retry budget so normal continuous-mode onend cycling (silence,
+      // no-speech, periodic STT restarts) never exhausts VOICE_MAX_RETRIES and
+      // leaves the mic dead before the user says "Cheese".
+      this.retries = 0;
+    };
 
     rec.onresult = (event) => {
       if (this.suppressed) return;
@@ -126,31 +126,20 @@ export class VoiceTrigger {
     };
 
     rec.onend = () => {
-      if (!this.listening) return;
-      // Auto-restart to keep listening, but guard against a restart storm — on
-      // iOS WebKit every start() can re-prompt for the mic, which without a
-      // bound pops the permission dialog endlessly. If we restart too many
-      // times within the window, it's a broken loop: give up and let the app
-      // fall back to another trigger.
-      const now = Date.now();
-      this.restartTimes = this.restartTimes.filter((t) => now - t < VOICE_RESTART_WINDOW_MS);
-      if (this.restartTimes.length >= VOICE_MAX_RESTARTS) {
-        this.onStatus('Voice recognition unavailable.');
-        this.onUnavailable();
-        this.stop();
-        return;
-      }
-      this.restartTimes.push(now);
-      try {
-        rec.start();
-      } catch {
-        /* start() throws if already starting; ignore */
+      // Auto-restart while we still intend to listen.
+      if (this.listening && this.retries < VOICE_MAX_RETRIES) {
+        this.retries++;
+        try {
+          rec.start();
+        } catch {
+          /* start() throws if already starting; ignore */
+        }
       }
     };
 
     this.recognition = rec;
     this.listening = true;
-    this.restartTimes = [];
+    this.retries = 0;
     try {
       rec.start();
     } catch {
@@ -162,7 +151,7 @@ export class VoiceTrigger {
   /** Arm the trigger so the next keyword fires (called per photo). */
   arm() {
     this.armed = true;
-    this.restartTimes = []; // fresh photo — give the restart guard a clean slate
+    this.retries = 0;
     this._resetSilence();
     this.onStatus('Say “Cheese”');
     this._startPrompt();
@@ -262,12 +251,12 @@ export class VoiceTrigger {
     this.zoomActive = false;
     this.suppressed = false;
     this.extraMatchPending = false;
-    this.restartTimes = [];
     this._clearPrompt();
     if (this.silenceTimer) clearTimeout(this.silenceTimer);
     this.silenceTimer = null;
     if (this.recognition) {
       this.recognition.onend = null;
+      this.recognition.onstart = null;
       this.recognition.onresult = null;
       this.recognition.onerror = null;
       try {

@@ -3,18 +3,7 @@
  * resource cleanup registry, debounce, and generic DOM utilities.
  */
 
-const { MAX_FILE_BYTES } = await import('./config.js?v=1b8ad94');
-
-// --- Platform detection -----------------------------------------------------
-// iOS (incl. iPadOS 13+, which reports as "Macintosh" but exposes touch). All
-// iOS browsers are WebKit; their SpeechRecognition re-prompts for the mic on
-// most non-gesture start() calls, so the voice trigger needs iOS-specific care.
-const _ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
-export const isIOS =
-  /iPad|iPhone|iPod/.test(_ua) ||
-  (typeof navigator !== 'undefined' &&
-    navigator.maxTouchPoints > 1 &&
-    /Macintosh/.test(_ua));
+const { MAX_FILE_BYTES } = await import('./config.js?v=ef39300');
 
 // --- Feature detection ------------------------------------------------------
 export const features = {
