@@ -50,7 +50,7 @@ const {
 const { detectPlaceholders } = await import('./placeholderDetector.js?v=b7ffc1b');
 const { renderTemplate } = await import('./templates.js?v=76eae3d');
 const { Camera } = await import('./camera.js?v=b611d23');
-const { VoiceTrigger, requestMicPermission } = await import('./microphone.js?v=87054fe');
+const { VoiceTrigger, requestMicPermission } = await import('./microphone.js?v=522f625');
 const { GestureTrigger } = await import('./gesture.js?v=e2222ab');
 const { UI } = await import('./ui.js?v=2d783bc');
 

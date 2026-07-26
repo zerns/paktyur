@@ -71,6 +71,14 @@ export class VoiceTrigger {
     rec.interimResults = true;
     rec.lang = 'en-US';
 
+    rec.onstart = () => {
+      // A successful (re)start proves recognition isn't in a hard-failure loop.
+      // Reset the retry budget so normal continuous-mode onend cycling (silence,
+      // no-speech, periodic STT restarts) never exhausts VOICE_MAX_RETRIES and
+      // leaves the mic dead before the user says "Cheese".
+      this.retries = 0;
+    };
+
     rec.onresult = (event) => {
       if (this.suppressed) return;
       for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -248,6 +256,7 @@ export class VoiceTrigger {
     this.silenceTimer = null;
     if (this.recognition) {
       this.recognition.onend = null;
+      this.recognition.onstart = null;
       this.recognition.onresult = null;
       this.recognition.onerror = null;
       try {
