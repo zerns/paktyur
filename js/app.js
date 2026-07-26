@@ -49,7 +49,7 @@ const {
 } = await import('./imageProcessor.js?v=ef64d50');
 const { detectPlaceholders } = await import('./placeholderDetector.js?v=8d48a67');
 const { renderTemplate } = await import('./templates.js?v=76eae3d');
-const { Camera } = await import('./camera.js?v=aaa513a');
+const { Camera } = await import('./camera.js?v=77a0b3f');
 const { VoiceTrigger, requestMicPermission } = await import('./microphone.js?v=e06c256');
 const { GestureTrigger } = await import('./gesture.js?v=ac2c322');
 const { UI } = await import('./ui.js?v=ed00f08');
@@ -374,8 +374,10 @@ class App {
       return;
     }
 
-    // Request mic (optional) and pick a trigger mode.
-    const micOk = await requestMicPermission();
+    // Request mic (optional) and pick a trigger mode. On iOS the camera stream
+    // already carries the audio grant (combined getUserMedia — a second
+    // audio-only request there gets rejected even after Allow), so skip it.
+    const micOk = this.camera.hasAudio || (await requestMicPermission());
     await this._chooseTriggerMode(micOk);
 
     // Draw guide overlay once the preview lays out.

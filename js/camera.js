@@ -4,13 +4,14 @@
  */
 
 const { CAMERA_CONSTRAINTS } = await import('./config.js?v=1b8ad94');
-const { features } = await import('./utils.js?v=00870b9');
+const { features, isIOS } = await import('./utils.js?v=00870b9');
 const { frameFromVideo } = await import('./imageProcessor.js?v=ef64d50');
 
 export class Camera {
   constructor(videoEl) {
     this.video = videoEl;
     this.stream = null;
+    this.hasAudio = false; // stream carries an audio track (iOS combined grant)
     this.deviceId = null;
     this.zoomCaps = null; // {min,max,step} | null — MediaTrackCapabilities.zoom
     this.zoomCurrent = 1;
@@ -55,7 +56,11 @@ export class Camera {
     this.zoomCaps = null;
 
     const constraints = {
-      audio: false,
+      // iOS WebKit reliably supports only one active getUserMedia capture; a
+      // separate audio-only request while the camera stream is live gets
+      // rejected even after the user taps Allow. Request camera + mic together
+      // in one call there so a single grant covers both.
+      audio: isIOS,
       video: deviceId
         ? { deviceId: { exact: deviceId } }
         : { ...CAMERA_CONSTRAINTS.video },
@@ -64,8 +69,17 @@ export class Camera {
     try {
       this.stream = await navigator.mediaDevices.getUserMedia(constraints);
     } catch (err) {
-      throw mapCameraError(err);
+      if (!constraints.audio) throw mapCameraError(err);
+      // Combined camera+mic denied (e.g. mic refused) — retry video-only so
+      // the camera still works; voice will simply be unavailable.
+      constraints.audio = false;
+      try {
+        this.stream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (err2) {
+        throw mapCameraError(err2);
+      }
     }
+    this.hasAudio = this.stream.getAudioTracks().length > 0;
 
     const track = this.stream.getVideoTracks()[0];
     this.deviceId = track?.getSettings().deviceId ?? deviceId ?? null;
@@ -105,6 +119,7 @@ export class Camera {
   /** Stop all tracks and release the stream. */
   stop() {
     this.zoomCaps = null;
+    this.hasAudio = false;
     if (this.stream) {
       this.stream.getTracks().forEach((t) => t.stop());
       this.stream = null;
