@@ -50,7 +50,7 @@ const {
 const { detectPlaceholders } = await import('./placeholderDetector.js?v=3510048');
 const { renderTemplate } = await import('./templates.js?v=76eae3d');
 const { Camera } = await import('./camera.js?v=63ce916');
-const { VoiceTrigger, requestMicPermission } = await import('./microphone.js?v=97e8f18');
+const { VoiceTrigger, requestMicPermission } = await import('./microphone.js?v=c3fd356');
 const { GestureTrigger } = await import('./gesture.js?v=5fabdb3');
 const { UI } = await import('./ui.js?v=d99fc7e');
 
@@ -96,6 +96,7 @@ class App {
     this.activeIndex = 0;
     this.outputUrl = null;
     this.triggerMode = null; // 'voice' | 'gesture' | 'manual'
+    this._voiceBroken = false; // set when the speech service rejects the mic (iOS Chrome)
     this.builtInTemplate = false; // true for the four generated templates
     this.capturing = false;
     this.zoomSupported = false;
@@ -347,6 +348,7 @@ class App {
   async _startSession() {
     this.photos = new Array(this.detection.valid.length).fill(null);
     this.activeIndex = 0;
+    this._voiceBroken = false; // give voice a fresh chance each session
     this._enter(State.SESSION);
     this.ui.setProgress(1, this.detection.valid.length);
 
@@ -425,10 +427,29 @@ class App {
     this._setZoomLevel(dir === 'in' ? 1 : 0.5);
   }
 
+  /**
+   * The speech service rejected the mic (iOS Chrome and other non-Safari iOS
+   * browsers lack Apple's speech entitlement, so recognition opens the mic then
+   * errors). Mark voice unusable and fall back so the user isn't stranded on a
+   * dead pill with a "permission denied" message.
+   */
+  _onVoiceUnavailable() {
+    if (this.state !== State.SESSION || this.triggerMode !== 'voice') return;
+    this._voiceBroken = true;
+    this.ui.setTriggerAvailability(this._availability());
+    const next = isOnline() ? 'gesture' : 'manual';
+    this._startTrigger(next).then(() => {
+      this.ui.setTriggerStatus(
+        `Voice needs Safari on iOS — switched to ${next === 'gesture' ? 'gesture' : 'tap'}.`
+      );
+      this._armCurrent();
+    });
+  }
+
   /** Which trigger modes are usable right now. */
   _availability() {
     return {
-      voice: !!(this._micOk && VoiceTrigger.supported),
+      voice: !!(this._micOk && VoiceTrigger.supported && !this._voiceBroken),
       gesture: isOnline(),
       manual: true,
     };
@@ -489,7 +510,8 @@ class App {
       this.voice = new VoiceTrigger(
         () => this._triggerCapture(),
         (s) => this.ui.setTriggerStatus(s),
-        (dir) => this._onVoiceZoom(dir)
+        (dir) => this._onVoiceZoom(dir),
+        () => this._onVoiceUnavailable()
       );
       try {
         this.voice.start();

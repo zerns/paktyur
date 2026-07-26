@@ -39,11 +39,16 @@ export class VoiceTrigger {
   /**
    * @param {() => void} onTrigger  fired when a keyword is recognized
    * @param {(status:string) => void} [onStatus]  optional status updates
+   * @param {(dir:string) => void} [onZoom]  zoom voice command handler
+   * @param {() => void} [onUnavailable]  fired when the speech service rejects
+   *   the mic (e.g. iOS Chrome, which lacks Apple's speech entitlement) so the
+   *   app can fall back to another trigger instead of a dead voice pill
    */
-  constructor(onTrigger, onStatus = () => {}, onZoom = () => {}) {
+  constructor(onTrigger, onStatus = () => {}, onZoom = () => {}, onUnavailable = () => {}) {
     this.onTrigger = onTrigger;
     this.onStatus = onStatus;
     this.onZoom = onZoom;
+    this.onUnavailable = onUnavailable;
     this.zoomActive = false; // recognize zoom commands only during idle session
     this.recognition = null;
     this.listening = false;
@@ -122,6 +127,7 @@ export class VoiceTrigger {
       if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
         this.onStatus('Microphone permission denied.');
         this.stop();
+        this.onUnavailable();
       }
     };
 
